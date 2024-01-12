@@ -12,7 +12,14 @@
 \usepackage{varwidth}
 \usepackage{amsmath}
 \usepackage{titling}
-\usetikzlibrary{positioning}
+\usetikzlibrary{
+  positioning,
+  arrows.meta,
+  matrix,
+  ext.node-families,
+  ext.positioning-plus,
+  ext.paths.ortho
+}
 \graphicspath{ {./images/} }
 \hypersetup{
   colorlinks=true,
@@ -21,13 +28,25 @@
 }
 \setcounter{tocdepth}{3}
 \setcounter{secnumdepth}{3}
-
 \newcommand{\subtitle}[1]{%
   \posttitle{%
     \par\end{center}
     \begin{center}\large#1\end{center}
     \vskip0.5em}%
 }
+\tikzset{
+  rows/.style 2 args={
+    /utils/temp/.style={row ##1/.append style={nodes={#2}}},
+    /utils/temp/.list={#1}},
+  columns/.style 2 args={
+    /utils/temp/.style={column ##1/.append style={nodes={#2}}},
+    /utils/temp/.list={#1}}}
+\makeatletter
+\tikzset{
+  left delimiter/.style 2 args={append after command={
+    \tikz@delimiter{south east}{south west}
+    {every delimiter,every left delimiter,#2}{south}{north}{#1}{.}{\pgf@y}}}}
+\makeatother
 
 \title{Projekt programistyczny}
 \subtitle{
@@ -51,9 +70,9 @@
   \newpage
   \include{wymagania_projektowe.tex}
   \include{opis_architektury.tex}
-  \include{opis_implementacji.tex}
-  \include{opis_dzialania.tex}
-  \include{wklad_pracy.tex}
-  \include{podsumowanie.tex}
-  \include{literatura.tex}
+  %\include{opis_implementacji.tex}
+  %\include{opis_dzialania.tex}
+  %\include{wklad_pracy.tex}
+  %\include{podsumowanie.tex}
+  %\include{literatura.tex}
 \end{document}
