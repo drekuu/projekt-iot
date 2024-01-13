@@ -1,3 +1,26 @@
 \section{Wymagania projektowe}
 \subsection{Podstawowe wymagania funkcjonalne}
+\subsubsection{Kierowca}
+\begin{itemize}
+  \item{Jako kierowca chcę zmieniać przystanki za pomocą terminalu w trakcie wykonywania kursu}
+  \item{Jako kierowca chcę wybierać trasę kursu w terminalu przy rozpoczynaniu jazdy}
+  \item{Jako kierowca chcę za pomocą terminalu rozpoczynać jazdę i ją kończyć na dowolnym przystanku}
+  \item{Jako kierowca chcę, aby po dotarciu na ostatni przystanek jazda kończyła się automatycznie}
+\end{itemize}
+\subsubsection{Pracownik}
+\begin{itemize}
+  \item{Jako pracownik chcę wsiadać na przystanku i płacić za przejazd za pomocą swojej karty pracowniczej}
+  \item{Jako pracownik chcę, aby koszt przejazdu był zależny od przejechanych przystanków i był pobierany dopiero po zakończeniu przejazdu (przyłożeniu karty pracowniczej drugi raz)}
+\end{itemize}
+\subsubsection{Administrator}
+\begin{itemize}
+  \item{Jako administrator chcę zarządzać\footnote{Poprzez zarządzanie rozumiemy operacje: dodawania, odczytu, aktualizowania i usuwania} wszystkimi kursami}
+  \item{Jako administrator chcę zarządzać wszystkimi przystankami}
+  \item{Jako administrator chcę zarządzać wszystkimi pracownikami, w szczególności ilością pieniędzy na ich koncie}
+\end{itemize}
 \subsection{Podstawowe wymagania niefunkcjonalne}
+\begin{itemize}
+  \item{System powinien obsługiwać więcej niż jednego pracownika naraz}
+  \item{System powinien obsługiwać wiele pojazdów (w tym terminalów) naraz}
+  \item{Operacje wykonywane na terminalu (płatność przez pracownika, zmiana trasy i przystanków przez kierowcę) powinny być jak najszybciej przekazywane do bazy danych}
+\end{itemize}
