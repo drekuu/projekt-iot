@@ -1,5 +1,4 @@
 from sqlite3 import connect, OperationalError, IntegrityError
-import os
 attributes: dict[str, str] = {
     'Courses': '(CourseID, CourseName)',
     'Stops': '(StopID, StopName)',
@@ -7,7 +6,6 @@ attributes: dict[str, str] = {
     'Workers': '(WorkerID, WorkerFirstName, WorkerLastName, WorkerBalance, WorkerCardID)',
     'CurrentRides': '(RideID, WorkerID, StopsTraveled)'
 }
-
 
 
 def connect_to_db() -> tuple:
@@ -31,22 +29,30 @@ def init_db() -> None:
     finally:
         disconnect_from_db(connection, cursor)
 
+def names_of_attributes_to_string(names_of_attributes: list[str]):
+    result = ''
+    for name in names_of_attributes:
+        result += f'{name},'
+    return result[:-1]
 
-def select(table_name: str, name_of_attribute_to_select: str, where_attribute: tuple) -> list:
+def select(table_name: str, names_of_attributes_to_select: list[str], where_attribute: tuple) -> list:
     connection, cursor = connect_to_db()
     parsed_where_value = parse_to_sql(where_attribute[1])
-    cursor.execute(f"SELECT {name_of_attribute_to_select} FROM {table_name} WHERE {where_attribute[0]} = {parsed_where_value};")
+    attributes = names_of_attributes_to_string(names_of_attributes_to_select)
+    cursor.execute(f"SELECT {attributes} FROM {table_name} "
+                   f"WHERE {where_attribute[0]} = {parsed_where_value};")
     cursor_result = cursor.fetchall()
     disconnect_from_db(connection, cursor)
-    return [tup[0] for tup in cursor_result]
+    return cursor_result
 
 
-def select_all(table_name: str, name_of_attribute_to_select: str) -> list:
+def select_all(table_name: str, names_of_attributes_to_select: list[str]) -> list:
     connection, cursor = connect_to_db()
-    cursor.execute(f"SELECT {name_of_attribute_to_select} FROM {table_name};")
+    attributes = names_of_attributes_to_string(names_of_attributes_to_select)
+    cursor.execute(f"SELECT {attributes} FROM {table_name};")
     cursor_result = cursor.fetchall()
     disconnect_from_db(connection, cursor)
-    return [tup[0] for tup in cursor_result]
+    return cursor_result
 
 
 def insert(table_name: str, tuple_to_insert: tuple):
@@ -97,5 +103,27 @@ def print_db():
 
 
 if __name__ == '__main__':
-    init_db()
+    # init_db()
+    # insert('Stops', (0, 'AA'))
+    # insert('Stops', (1, 'BB'))
+    # insert('Stops', (2, 'CC'))
+    # insert('Stops', (3, 'DD'))
+    # insert('Stops', (4, 'EE'))
+    # insert('Stops', (5, 'FF'))
+
+    # insert('Assignments', (0, 0, 1))
+    # insert('Assignments', (0, 1, 2))
+    # insert('Assignments', (1, 1, 1))
+    # insert('Assignments', (1, 2, 2))
+    # insert('Assignments', (1, 3, 3))
+    # insert('Assignments', (1, 5, 4))
+    
+    # insert('Workers', (0, 'Jan', 'Kowalski', 10, 5))
+    # insert('Workers', (1, 'Maciej', 'Łukasiewicz', 20, 7))
+    # insert('Workers', (2, 'Łukasz', 'Paw', 15, 9))
+    # insert('Workers', (3, 'Jan', 'Paw', 0, 26))
+    # insert('Workers', (4, 'Grzegorz', 'Kowalski', -3, 13))
+    # insert('Workers', (5, 'Bartosz', 'Nowak', 16, 12))
+
+    print(select_all('Courses', ['CourseID', 'courseName']))
     print_db()
