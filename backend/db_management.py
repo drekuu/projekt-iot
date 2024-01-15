@@ -1,13 +1,11 @@
 from sqlite3 import connect, OperationalError, IntegrityError
-import os
 attributes: dict[str, str] = {
     'Courses': '(CourseID, CourseName)',
     'Stops': '(StopID, StopName)',
     'Assignments': '(CourseID, StopID, StopNumber)',
     'Workers': '(WorkerID, WorkerFirstName, WorkerLastName, WorkerBalance, WorkerCardID)',
-    'CurrentRides': '(RideID, WorkerID, StopsTraveled)',
+    'CurrentRides': '(RideID, WorkerID, StopsTraveled)'
 }
-
 
 
 def connect_to_db() -> tuple:
@@ -35,7 +33,8 @@ def init_db() -> None:
 def select(table_name: str, name_of_attribute_to_select: str, where_attribute: tuple) -> list:
     connection, cursor = connect_to_db()
     parsed_where_value = parse_to_sql(where_attribute[1])
-    cursor.execute(f"SELECT {name_of_attribute_to_select} FROM {table_name} WHERE {where_attribute[0]} = {parsed_where_value};")
+    cursor.execute(f"SELECT {name_of_attribute_to_select} FROM {table_name} "
+                   f"WHERE {where_attribute[0]} = {parsed_where_value};")
     cursor_result = cursor.fetchall()
     disconnect_from_db(connection, cursor)
     return [tup[0] for tup in cursor_result]
@@ -97,5 +96,5 @@ def print_db():
 
 
 if __name__ == '__main__':
-    init_db()
+    # init_db()
     print_db()
