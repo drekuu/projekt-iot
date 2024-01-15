@@ -5,7 +5,7 @@ attributes: dict[str, str] = {
     'Stops': '(StopID, StopName)',
     'Assignments': '(CourseID, StopID, StopNumber)',
     'Workers': '(WorkerID, WorkerFirstName, WorkerLastName, WorkerBalance, WorkerCardID)',
-    'CurrentRides': '(RideID, WorkerID, StopsTraveled)',
+    'CurrentRides': '(RideID, WorkerID, StopsTraveled)'
 }
 
 
