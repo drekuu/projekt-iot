@@ -58,3 +58,10 @@ def draw_stops_screen(route: Route, stop_index: int) -> None:
     draw.text((8, 20), f'Przystanek: {route[stop_index].name}', font=fontLarge, fill='BLACK')
     draw.text((8, 40), f'{stop_index}/{len(route.stops)}', font=fontLarge, fill='BLACK')
     disp.ShowImage(image, 0, 0)
+
+
+def draw_message(message: str) -> None:
+    image = get_blank_image()
+    draw = ImageDraw.Draw(image)
+    draw.text((8, 0), message, font=fontLarge, fill='BLACK')
+    disp.ShowImage(image, 0, 0)

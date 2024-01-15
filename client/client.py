@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from http import server
 from config import *
 import RPi.GPIO as GPIO
 import paho.mqtt.client as mqtt
@@ -12,12 +13,12 @@ from models import *
 from ui import *
 
 rfid = MFRC522()
+server_ip = "10.108.33.124"
 
 route_index = 0
 routes: list[Route] = []
-current_stop_index = 0
+current_stop_index: int = None
 client = mqtt.Client()
-rfid_thread: threading.Thread = None
 stop_rfid_polling = False
 last_card_scan_value_time: (int, datetime.datetime) = (None, None)
 
@@ -44,21 +45,24 @@ def on_green_button_while_on_route() -> None:
     if current_stop_index < len(route.stops) - 1:
         current_stop_index += 1
         draw_stops_screen(route, current_stop_index)
+        client.publish("worker/notify", f"NEXT;{routes[route_index].name};{current_stop_index}")
     else:
         GPIO.remove_event_detect(greenButton)
         GPIO.remove_event_detect(redButton)
+        client.publish("worker/notify", f"FINISH;{routes[route_index].name}")
         route_index = 0
         select_route()
 
 def on_red_button_while_on_route() -> None:
     global current_stop_index
-    global routes
     global route_index
     global stop_rfid_polling
     GPIO.remove_event_detect(greenButton)
     GPIO.remove_event_detect(redButton)
     route_index = 0
     stop_rfid_polling = True
+    current_stop_index = None
+    client.publish("worker/notify", f"END;{routes[route_index].name}")
     select_route()
 
 def on_green_pressed_while_selecting_route() -> None:
@@ -69,10 +73,14 @@ def on_green_pressed_while_selecting_route() -> None:
 
 def on_card_scanned(uid: int) -> None:
     global last_card_scan_value_time
+    global current_stop_index
+    global routes
+    global route_index
     (last_value, last_time) = last_card_scan_value_time
     if last_time is not None and last_time + datetime.timedelta(seconds=7) < datetime.datetime.now():
         return
     last_card_scan_value_time = (uid, datetime.datetime.now())
+    client.publish("worker/notify", f"{uid};{routes[route_index].name};{current_stop_index}")
 
 def listen_rfid() -> None:
     global stop_rfid_polling
@@ -106,6 +114,7 @@ def begin_route() -> None:
     current_stop_index = 0
     GPIO.add_event_detect(greenButton, GPIO.FALLING, callback=on_green_button_while_on_route, bouncetime=100)
     GPIO.add_event_detect(redButton, GPIO.FALLING, callback=on_red_button_while_on_route, bouncetime=100)
+    client.publish("worker/notify", f"START;{routes[route_index].name}")
     draw_stops_screen(routes[route_index], current_stop_index)
     stop_rfid_polling = False
     rfid_thread = threading.Thread(target=listen_rfid)
@@ -113,9 +122,22 @@ def begin_route() -> None:
     rfid_thread.start()
 
 
+def on_mqtt_message(client, userdata, message):
+    message_decoded = str(message.payload.decode('utf-8'))
+    print(f'Message received: {message_decoded}')
+    draw_message(message_decoded)
+    timer = threading.Timer(7, draw_stops_screen, args=(routes[route_index], current_stop_index))
+    timer.start()
+
 if __name__ == "__main__":
     disp.Init()
     disp.clear()
+
+    client.connect("localhost")
+    client.on_message = on_mqtt_message
+    client.loop_start()
+    client.subscribe("server/notify")
+
     r1s1 = Stop("Os. Sobieskiego")
     r1s2 = Stop("Szymanowskiego")
     r1s3 = Stop("Kurpinskiego")
