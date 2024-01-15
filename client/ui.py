@@ -3,9 +3,11 @@ from PIL import ImageFont, ImageDraw, Image
 
 from models import *
 
-disp = SSD1331.SSD1331()
 fontLarge = ImageFont.truetype('lib/oled/Font.ttf', 15)
 fontSmall = ImageFont.truetype('lib/oled/Font.ttf', 13)
+fontExtraSmall = ImageFont.truetype('lib/oled/Font.ttf', 11)
+
+disp = SSD1331.SSD1331()
 
 def get_blank_image() -> Image:
     return Image.new('RGB', (disp.width, disp.height), 'WHITE')
@@ -54,9 +56,9 @@ def draw_routes_menu(routes: list[Route], route_index: int) -> None:
 def draw_stops_screen(route: Route, stop_index: int) -> None:
     image = get_blank_image()
     draw = ImageDraw.Draw(image)
-    draw.text((8, 0), f'Trasa: {route.name}', font=fontSmall, fill='BLACK')
-    draw.text((8, 20), f'Przystanek: {route[stop_index].name}', font=fontLarge, fill='BLACK')
-    draw.text((8, 40), f'{stop_index}/{len(route.stops)}', font=fontLarge, fill='BLACK')
+    draw.text((8, 0), route.name, font=fontSmall, fill='BLACK')
+    draw.text((8, 20), route.stops[stop_index].name, font=fontExtraSmall, fill='BLACK')
+    draw.text((8, 40), f'{stop_index + 1}/{len(route.stops)}', font=fontLarge, fill='BLACK')
     disp.ShowImage(image, 0, 0)
 
 
