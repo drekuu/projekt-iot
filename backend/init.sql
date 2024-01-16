@@ -28,6 +28,14 @@ CREATE TABLE Workers (
     PRIMARY KEY(WorkerID)
 );
 
+CREATE TABLE BUSES (
+    BusID int NOT NULL,
+    CourseID int NULL,
+    StopsInAscendingOrder int NULL, --Boolean imitation
+    StopID int NULL,
+    FOREIGN KEY(StopID) REFERENCES Stops(StopID)
+);
+
 CREATE TABLE CurrentRides (
     RideID int NOT NULL,
     WorkerID int NOT NULL,

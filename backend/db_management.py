@@ -29,18 +29,26 @@ def init_db() -> None:
     finally:
         disconnect_from_db(connection, cursor)
 
+
 def names_of_attributes_to_string(names_of_attributes: list[str]):
     result = ''
     for name in names_of_attributes:
         result += f'{name},'
     return result[:-1]
 
-def select(table_name: str, names_of_attributes_to_select: list[str], where_attribute: tuple) -> list:
+
+def where_statements_to_string(where_statements: list[tuple]):
+    result = ''
+    for where_statement in where_statements:
+        result += f'{where_statement[0]} = {parse_to_sql(where_statement[1])} AND '
+    return result[:-5]
+
+
+def select(table_name: str, names_of_attributes_to_select: list[str], where_statements: list[tuple]) -> list:
     connection, cursor = connect_to_db()
-    parsed_where_value = parse_to_sql(where_attribute[1])
     attributes = names_of_attributes_to_string(names_of_attributes_to_select)
     cursor.execute(f"SELECT {attributes} FROM {table_name} "
-                   f"WHERE {where_attribute[0]} = {parsed_where_value};")
+                   f"WHERE {where_statements_to_string(where_statements)};")
     cursor_result = cursor.fetchall()
     disconnect_from_db(connection, cursor)
     return cursor_result
@@ -125,5 +133,5 @@ if __name__ == '__main__':
     # insert('Workers', (4, 'Grzegorz', 'Kowalski', -3, 13))
     # insert('Workers', (5, 'Bartosz', 'Nowak', 16, 12))
 
-    print(select_all('Courses', ['CourseID', 'courseName']))
+    # print(select_all('Courses', ['CourseID', 'courseName']))
     print_db()
