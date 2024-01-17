@@ -1,6 +1,6 @@
 <script>
-
-let employees = getEmployeesData();
+import { onMount } from 'svelte';
+let employees = [];
 let editEmployeeId;
 let maxBalance = 200;
 let formData = {
@@ -9,13 +9,33 @@ let formData = {
     lastName: '',
     balance: ''
 }
+const workersUrl = "http://localhost:5173/api/workers"
 
-function getEmployeesData(){
-    return [{id: "01", firstName: "Jan", lastName: "Kowalski", balance: 100}, {id: "02", firstName: "Mateusz", lastName: "Kowalski", balance: 20}]
+onMount(async ()=>{
+    employees = await getEmployeesData();
+});
+
+async function getEmployeesData(){
+    try{
+        const response = await fetch(workersUrl);
+        const data = await response.json();
+        const result = Object.keys(data).map(key => {
+            const entry = data[key];
+            return {
+                card_id: entry.card_id,
+                first_name: entry.first_name,
+                last_name: entry.last_name,
+                balance: entry.balance
+            }
+        })
+        return result;
+    }catch(err){
+        console.log(err);
+    }
 }
 
 function updateEmployeeBalance(employeeId, newBalance){
-    const id = employees.findIndex(employee => employee.id === employeeId)
+    const id = employees.findIndex(employee => employee.card_id === employeeId)
     if(id !== -1){
         const updatedEmployees = employees;
         updatedEmployees[id].balance = newBalance;
@@ -29,7 +49,7 @@ function addEmployee(){
         return;
     }
     employees = [...employees, {id: formData.id,
-                                firstName: formData.firstName,
+                                first_name: formData.firstName,
                                 lastName: formData.lastName, 
                                 balance: formData.balance}]
     let form = document.getElementById('add_form');
@@ -48,32 +68,32 @@ function addEmployee(){
     <h1 class=" text-xl"><strong>Employees List</strong></h1>
     <table class=" w-4/6 text-lg border-collapse border-solid border-black border-2">
         <tr>
-            <th>Id</th>
+            <th>Card ID</th>
             <th>First Name</th>
             <th>Last Name</th>
             <th class="">Balance</th>
         </tr>
         {#each employees as employee}
             <tr class="">
-                <td>{employee.id}</td>
-                <td>{employee.firstName}</td>
-                <td>{employee.lastName}</td>
+                <td>{employee.card_id}</td>
+                <td>{employee.first_name}</td>
+                <td>{employee.last_name}</td>
                 <td>
                 <div class=" flex flex-row justify-between px-2">
 
-                    {#if editEmployeeId !== employee.id}
+                    {#if editEmployeeId !== employee.card_id}
                         <h2 class=" w-10 border-2 border-white">
                             {employee.balance}
                         </h2>
-                        <button on:click={()=> editEmployeeId = employee.id}>
+                        <button on:click={()=> editEmployeeId = employee.card_id}>
                             <i class="fa-solid fa-pen-to-square"></i>
                         </button>
                     {:else}
-                        <input class=" w-10 border-2 rounded-md" type="number" id="{employee.id}" value="{employee.balance}">
+                        <input class=" w-10 border-2 rounded-md" type="number" id="{employee.card_id}" value="{employee.balance}">
                         <button on:click={()=>{
-                            let balanceVal = document.getElementById(employee.id)?.value;
+                            let balanceVal = document.getElementById(employee.card_id)?.value;
                             if(balanceVal > maxBalance) balanceVal = maxBalance;
-                            updateEmployeeBalance(employee.id, balanceVal);
+                            updateEmployeeBalance(employee.card_id, balanceVal);
                             editEmployeeId = '';
                         }}>
                             <i class="fa-solid fa-upload"></i>
@@ -96,7 +116,7 @@ function addEmployee(){
                         <label for="id" class=" hidden">Id</label>
                     </td>
                     <td>
-                        <input type="text" placeholder="First Name" id="name" name="firstName" bind:value={formData.firstName}>
+                        <input type="text" placeholder="First Name" id="name" name="firstName" bind:value={formData.first_name}>
                         <label for="name" class=" hidden">First Name</label>
                     </td>
                     <td>
