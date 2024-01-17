@@ -14,6 +14,7 @@ CREATE TABLE Assignments (
     CourseID int NOT NULL,
     StopID int NOT NULL,
     StopNumber int NOT NULL,
+    PRIMARY KEY(CourseID, StopID),
     FOREIGN KEY(CourseID) REFERENCES Courses(CourseID),
     FOREIGN KEY(StopID) REFERENCES Stops(StopID)
 );
@@ -27,9 +28,18 @@ CREATE TABLE Workers (
     PRIMARY KEY(WorkerID)
 );
 
+CREATE TABLE BUSES (
+    BusID int NOT NULL,
+    CourseID int NULL,
+    StopsInAscendingOrder int NULL, --Boolean imitation
+    StopID int NULL,
+    FOREIGN KEY(StopID) REFERENCES Stops(StopID)
+);
+
 CREATE TABLE CurrentRides (
     RideID int NOT NULL,
     WorkerID int NOT NULL,
     StopsTraveled int NOT NULL,
+    PRIMARY KEY(RideID, WorkerID),
     FOREIGN KEY(WorkerID) REFERENCES Workers(WorkerID)
 );

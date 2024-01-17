@@ -12,6 +12,7 @@
 \usepackage{varwidth}
 \usepackage{amsmath}
 \usepackage{titling}
+\usepackage{enumitem}
 \usetikzlibrary{
   positioning,
   arrows.meta,
@@ -48,7 +49,10 @@
     {every delimiter,every left delimiter,#2}{south}{north}{#1}{.}{\pgf@y}}}}
 \makeatother
 
-\title{Projekt programistyczny}
+\title{
+  Projekt programistyczny \\
+  System przejazdów pracowniczych w komunikacji miejskiej
+}
 \subtitle{
   Podstawy internetu rzeczy \\
   Prowadzący laboratorium: dr inż. Krzysztof Chudzik
@@ -68,9 +72,10 @@
   \tableofcontents
 
   \newpage
+  \include{wstep.tex}
   \include{wymagania_projektowe.tex}
   \include{opis_architektury.tex}
-  %\include{opis_implementacji.tex}
+  \include{opis_implementacji.tex}
   %\include{opis_dzialania.tex}
   %\include{wklad_pracy.tex}
   %\include{podsumowanie.tex}
