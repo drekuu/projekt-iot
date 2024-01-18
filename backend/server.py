@@ -23,7 +23,8 @@ async def courses():
 
 @app.get("/workers")
 async def workers():
-    workers_data = db_management.select_all('Workers', ['WorkerID', 'WorkerFirstName', 'WorkerLastName', 'WorkerBalance', 'WorkerCardID'])
+    workers_data = db_management.select_all('Workers', ['WorkerID', 'WorkerFirstName', 'WorkerLastName',
+                                                        'WorkerBalance', 'WorkerCardID'])
     result = {}
     for worker_id, first_name, last_name, balance, card_id in workers_data:
         result[worker_id] = {
@@ -84,6 +85,26 @@ async def next_stop(bus_id: int):
                                            [('CourseID', course_id), ('stopNumber', new_stop_number)])[0][0]
         new_stop_name = db_management.select('Stops', ['StopName'], [('StopID', new_stop_id)])[0][0]
         return {'success': f'{new_stop_number_to_display}. {new_stop_name}'}
+
+
+@app.get("/choosecourse")
+async def choose_course(bus: int, course: str, direction: bool):
+    """
+    :param bus: Bus ID
+    :param course: Course name
+    :param direction: true if beginning from the first stop of the course, false if from the last one
+    """
+    course_id = db_management.select('Courses', ['CourseID'], [('CourseName', course)])[0][0]
+    db_management.update('Buses', ('CourseID', course_id), ('BusID', bus))
+    db_management.update('Buses', ('StopsInAscendingOrder', int(direction)), ('BusID', bus))
+    if direction:
+        stop_number = 1
+    else:
+        stop_number = len(db_management.select('Assignments', ['CourseID'], [('CourseID', course_id)]))
+    db_management.update('Buses', ('StopNumber', stop_number), ('BusID', bus))
+    return {'success': f'The course of bus with ID {bus} is now {course}. It starts from the '
+                       f'{"first" if direction else "last"} stop of the route.'}
+
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=55555)
