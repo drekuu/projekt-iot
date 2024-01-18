@@ -1,8 +1,10 @@
 import uvicorn
 from fastapi import FastAPI
 import db_management
+from sqlite3 import OperationalError
 
 app = FastAPI()
+
 
 @app.get("/courses")
 async def courses():
@@ -33,21 +35,32 @@ async def workers():
 
 @app.get("/buses")
 async def buses():
-    buses_data = db_management.select_all('Buses', ['BusID', 'CourseID', 'StopsInAscendingOrder', 'StopID'])
+    buses_data = db_management.select_all('Buses', ['BusID', 'CourseID', 'StopsInAscendingOrder', 'StopNumber'])
     result = {}
-    for bus_id, course_id, stops_order, stop_id in buses_data:
+    for bus_id, course_id, stops_order, stop_number in buses_data:
         if not course_id:
             result[bus_id] = {}
         else:
             course_name = db_management.select('Courses', ['CourseName'], [('CourseID', course_id)])[0][0]
-            stop_number = db_management.select('Assignments', ['StopNumber'], [('CourseID', course_id),
-                                                                               ('StopID', stop_id)])[0][0]
+            stop_number = stop_number
             direction = 'right' if stops_order else 'left'
             result[bus_id] = {
                 'course_name': course_name,
                 'stop_number': stop_number,
                 'direction': direction
             }
-    
+    return result
+
+
+@app.get("/nextstop/{bus_id}")
+async def next_stop(bus_id: int):
+    try:
+        bus_data = db_management.select('Buses', ['CourseID', 'StopsInAscendingOrder', 'StopNumber'], [('BusID', bus_id)])
+    except OperationalError:
+        return {'error': f'No bus with ID {bus_id}.'}
+    course_id, stops_order, stop_number = bus_data[0]
+    stops = [tup[0] for tup in db_management.select('Assignments', ['StopID'], [('CourseID', course_id)])]
+
+
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=55555)

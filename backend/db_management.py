@@ -4,6 +4,7 @@ attributes: dict[str, str] = {
     'Stops': '(StopID, StopName)',
     'Assignments': '(CourseID, StopID, StopNumber)',
     'Workers': '(WorkerID, WorkerFirstName, WorkerLastName, WorkerBalance, WorkerCardID)',
+    'Buses': '(BusID, CourseID, StopsInAscendingOrder, StopNumber)',
     'CurrentRides': '(RideID, WorkerID, StopsTraveled)'
 }
 
@@ -28,6 +29,13 @@ def init_db() -> None:
         print("Baza danych już istnieje. Nie podjęto inicjalizacji.")
     finally:
         disconnect_from_db(connection, cursor)
+
+
+def insert_example() -> None:
+    connection, cursor = connect_to_db()
+    with open(f'insert_example.sql', 'r') as sql_file:
+        cursor.executescript(sql_file.read())
+    disconnect_from_db(connection, cursor)
 
 
 def names_of_attributes_to_string(names_of_attributes: list[str]):
