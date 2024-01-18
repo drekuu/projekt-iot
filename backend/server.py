@@ -9,7 +9,7 @@ app = FastAPI()
 # --- INFO ENDPOINTS ---
 
 @app.get("/courses")
-async def courses():
+async def courses_endpoint():
     result = {}
     courses = db_management.select_all('Courses', ['CourseID', 'courseName'])
     for course_id, course_name in courses:
@@ -22,7 +22,7 @@ async def courses():
 
 
 @app.get("/workers")
-async def workers():
+async def workers_endpoint():
     workers_data = db_management.select_all('Workers', ['WorkerID', 'WorkerFirstName', 'WorkerLastName',
                                                         'WorkerBalance', 'WorkerCardID'])
     result = {}
@@ -37,7 +37,7 @@ async def workers():
 
 
 @app.get("/buses")
-async def buses():
+async def buses_endpoint():
     buses_data = db_management.select_all('Buses', ['BusID', 'CourseID', 'StopsInAscendingOrder', 'StopNumber'])
     result = {}
     for bus_id, course_id, stops_order, stop_number in buses_data:
@@ -57,18 +57,51 @@ async def buses():
 
 # --- ACTION ENDPOINTS ---
 
+NEXT_STOP = 0
+ROUTE_ENDED = 1
+NO_SUCH_BUS = 2
+BUS_NOT_ON_ROUTE = 3
+
 @app.get("/nextstop/{bus_id}")
-async def next_stop(bus_id: int):
+async def next_stop_endpoint(bus_id: int) -> dict[str, str]:
+    result_code = next_stop(bus_id)
+    if result_code == ROUTE_ENDED:
+        return {'success': 'The route has ended.'}
+    elif result_code == NO_SUCH_BUS:
+        return {'error': f'No bus with ID {bus_id}.'}
+    elif result_code == BUS_NOT_ON_ROUTE:
+        return {'error': 'The bus is not on any route.'}
+    else:
+        return result_code
+
+@app.get("/choosecourse/{bus}")
+async def choose_course_endpoint(bus: int, course: str, direction: bool):
+    """
+    :param bus: Bus ID
+    :param course: Course name
+    :param direction: true if beginning from the first stop of the course, false if from the last one
+    """
+    choose_course(bus, course, direction)
+    return {'success': f'The course of bus with ID {bus} is now {course}. It starts from the '
+                       f'{"first" if direction else "last"} stop of the route.'}
+
+
+## --- OTHER METHODS ---
+
+
+## --- MQTT COMMUNICATION ---
+
+def next_stop(bus_id: int)
     bus_data = db_management.select('Buses', ['BusID', 'CourseID', 'StopsInAscendingOrder', 'StopNumber'],
                                     [('BusID', bus_id)])
     if not bus_data:
-        return {'error': f'No bus with ID {bus_id}.'}
+        return NO_SUCH_BUS
     bus_id, course_id, stops_order, stop_number = bus_data[0]
     try:
         stops = [tup[0] for tup in db_management.select('Assignments', ['StopID'],
                                                         [('CourseID', course_id)])]
     except OperationalError:
-        return {'error': 'The bus is not on any route.'}
+        return BUS_NOT_ON_ROUTE
     if stops_order == 1:
         new_stop_number = stop_number + 1
         new_stop_number_to_display = new_stop_number
@@ -78,7 +111,7 @@ async def next_stop(bus_id: int):
     if new_stop_number == 0 or new_stop_number > len(stops):
         for attribute_name in ['CourseID', 'StopsInAscendingOrder', 'StopNumber']:
             db_management.update('Buses', (attribute_name, 'null'), ('BusID', bus_id))
-        return {'success': 'The route has ended.'}
+        return ROUTE_ENDED
     else:
         db_management.update('Buses', ('stopNumber', new_stop_number), ('BusID', bus_id))
         new_stop_id = db_management.select('Assignments', ['StopID'],
@@ -86,24 +119,15 @@ async def next_stop(bus_id: int):
         new_stop_name = db_management.select('Stops', ['StopName'], [('StopID', new_stop_id)])[0][0]
         return {'success': f'{new_stop_number_to_display}. {new_stop_name}'}
 
-
-@app.get("/choosecourse/{bus}")
-async def choose_course(bus: int, course: str, direction: bool):
-    """
-    :param bus: Bus ID
-    :param course: Course name
-    :param direction: true if beginning from the first stop of the course, false if from the last one
-    """
-    course_id = db_management.select('Courses', ['CourseID'], [('CourseName', course)])[0][0]
-    db_management.update('Buses', ('CourseID', course_id), ('BusID', bus))
-    db_management.update('Buses', ('StopsInAscendingOrder', int(direction)), ('BusID', bus))
+def choose_course(bus_id: int, course_name: str, direction: bool):
+    course_id = db_management.select('Courses', ['CourseID'], [('CourseName', course_name)])[0][0]
+    db_management.update('Buses', ('CourseID', course_id), ('BusID', bus_id))
+    db_management.update('Buses', ('StopsInAscendingOrder', int(direction)), ('BusID', bus_id))
     if direction:
         stop_number = 1
     else:
         stop_number = len(db_management.select('Assignments', ['CourseID'], [('CourseID', course_id)]))
-    db_management.update('Buses', ('StopNumber', stop_number), ('BusID', bus))
-    return {'success': f'The course of bus with ID {bus} is now {course}. It starts from the '
-                       f'{"first" if direction else "last"} stop of the route.'}
+    db_management.update('Buses', ('StopNumber', stop_number), ('BusID', bus_id))
 
 
 if __name__ == '__main__':

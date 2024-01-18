@@ -39,6 +39,7 @@ CREATE TABLE BUSES (
 CREATE TABLE CurrentRides (
     RideID int NOT NULL,
     WorkerID int NOT NULL,
+    BusID int NOT NULL,
     StopsTraveled int NOT NULL,
     PRIMARY KEY(RideID, WorkerID),
     FOREIGN KEY(WorkerID) REFERENCES Workers(WorkerID)
