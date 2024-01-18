@@ -109,7 +109,7 @@ def parse_to_sql(value):
 
 def print_db():
     connection, cursor = connect_to_db()
-    for table_name in ['Courses', 'Stops', 'Assignments', 'Workers', 'CurrentRides']:
+    for table_name in ['Courses', 'Stops', 'Assignments', 'Workers', 'Buses', 'CurrentRides']:
         print('- - - - - - - - - - - - - - - - -')
         print(table_name)
         cursor.execute(f"SELECT * FROM {table_name};")
@@ -119,27 +119,6 @@ def print_db():
 
 
 if __name__ == '__main__':
-    # init_db()
-    # insert('Stops', (0, 'AA'))
-    # insert('Stops', (1, 'BB'))
-    # insert('Stops', (2, 'CC'))
-    # insert('Stops', (3, 'DD'))
-    # insert('Stops', (4, 'EE'))
-    # insert('Stops', (5, 'FF'))
-
-    # insert('Assignments', (0, 0, 1))
-    # insert('Assignments', (0, 1, 2))
-    # insert('Assignments', (1, 1, 1))
-    # insert('Assignments', (1, 2, 2))
-    # insert('Assignments', (1, 3, 3))
-    # insert('Assignments', (1, 5, 4))
-    
-    # insert('Workers', (0, 'Jan', 'Kowalski', 10, 5))
-    # insert('Workers', (1, 'Maciej', 'Łukasiewicz', 20, 7))
-    # insert('Workers', (2, 'Łukasz', 'Paw', 15, 9))
-    # insert('Workers', (3, 'Jan', 'Paw', 0, 26))
-    # insert('Workers', (4, 'Grzegorz', 'Kowalski', -3, 13))
-    # insert('Workers', (5, 'Bartosz', 'Nowak', 16, 12))
-
-    # print(select_all('Courses', ['CourseID', 'courseName']))
+    init_db()
+    insert_example()
     print_db()

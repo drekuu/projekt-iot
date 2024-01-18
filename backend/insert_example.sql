@@ -3,7 +3,7 @@ INSERT INTO Courses
 VALUES
     (1, "LongCourse"),
     (2, "MediumLengthCourse"),
-    (2, "ShortCourse");
+    (3, "ShortCourse");
 
 
 INSERT INTO Stops
@@ -89,16 +89,16 @@ VALUES
 INSERT INTO BUSES
     (BusID, CourseID, StopsInAscendingOrder, StopNumber)
 VALUES
-    (1, 1, 1, 3),
+    (1, 3, 1, 3),
     (2, 2, 1, 4),
-    (3, 1, 0, 5),
+    (3, 3, 0, 5),
     (4, null, null, null),
-    (5, 3, 1, 4),
-    (6, 3, 1, 8),
+    (5, 1, 1, 4),
+    (6, 1, 1, 8),
     (7, 2, 0, 1),
-    (8, 3, 0, 11),
+    (8, 1, 0, 11),
     (9, 2, 0, 7),
-    (10, 3, 0, 2);
+    (10, 1, 0, 2);
 
 -- INSERT INTO CurrentRides
 --     (RideID, WorkerID, StopsTraveled)
