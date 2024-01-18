@@ -4,6 +4,10 @@ port - 55555
 ## Info endpoints
 
 ### /courses
+    {
+        <course_name>(string): <stops_names>(list of strings),
+        ...
+    }
 
 ### /workers
     {
