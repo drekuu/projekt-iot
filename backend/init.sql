@@ -23,7 +23,7 @@ CREATE TABLE Workers (
     WorkerID int NOT NULL,
     WorkerFirstName varchar(255) NOT NULL,
     WorkerLastName varchar(255) NOT NULL,
-    WorkerBalance int NOT NULL,
+    WorkerBalance real NOT NULL,
     WorkerCardID int varchar(255),
     PRIMARY KEY(WorkerID)
 );

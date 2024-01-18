@@ -31,6 +31,12 @@ port - 55555
         ...
     }
 
+### /stops
+    {  
+        <stop_id>(string): <stop_name>(string),
+        ...
+    }
+
 ## Action endpoints
 
 ### /nextstop/<bus_id>
@@ -59,7 +65,7 @@ if there is no bus with provided id:
     }
 
 ### /choosecourse/<bus_id>
-Proper request should include query parameters:
+Query parameters:
 * course - Course ID
 * direction - true if beginning from the first stop of the course, false if from the last one
 
@@ -70,3 +76,51 @@ Example:
 Response:
 
     {"success":"The course of bus with ID 4 is now LongCourse. It starts from the last stop of the route."}
+
+### /addbalance/<worker_id>
+Query parameters:
+* value - Money to add
+
+Example:
+
+    /addbalance/6?value=20.0
+
+Response:
+
+    {"success":"Balance of worker with ID 6 has changed from 800.0 to 820.0"}
+
+### /addworker
+Query parameters:
+* firstname - First name
+* lastname - First name
+* card - Card ID
+
+Example:
+
+    /addworker?firstname=Adam&lastname=Sandlers&card=W9999
+
+Response:
+
+    {"success":"Worker Adam Sandlers added successfully."}
+
+### /addCourse/<course_name>
+Query parameters:
+* stops - Stops as stop1,stop2,...,stopN
+
+Example:
+
+    /addcourse/NewCourse?stops=1,3,5,6
+
+Response:
+
+    {"success":"Course NewCourse added successfully."}
+
+### /addStop/<stop_name>
+
+Example:
+
+    /addstop/NewStop
+
+Response:
+
+    {"success":"Stop NewStop added successfully."}

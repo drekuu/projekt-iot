@@ -55,12 +55,22 @@ async def buses_endpoint():
     return result
 
 
+@app.get("/stops")
+async def stops_endpoint():
+    stops_data = db_management.select_all('Stops', ['StopID', 'StopName'])
+    result = {}
+    for stop_id, stop_name in stops_data:
+        result[stop_id] = stop_name
+    return result
+
+
 # --- ACTION ENDPOINTS ---
 
 NEXT_STOP = 0
 ROUTE_ENDED = 1
 NO_SUCH_BUS = 2
 BUS_NOT_ON_ROUTE = 3
+
 
 @app.get("/nextstop/{bus_id}")
 async def next_stop_endpoint(bus_id: int) -> dict[str, str]:
@@ -86,12 +96,46 @@ async def choose_course_endpoint(bus: int, course: str, direction: bool):
                        f'{"first" if direction else "last"} stop of the route.'}
 
 
-## --- OTHER METHODS ---
+@app.get("/addbalance/{worker_id}")
+async def add_balance_endpoint(worker_id: int, value: float):
+    current_balance = db_management.select('Workers', ['WorkerBalance'], [('WorkerID', worker_id)])[0][0]
+    db_management.update('Workers', ('WorkerBalance', current_balance + value), ('WorkerID', worker_id))
+    return {'success': f'Balance of worker with ID {worker_id} has changed from {current_balance} to '
+                       f'{current_balance + value}'}
 
 
-## --- MQTT COMMUNICATION ---
+@app.get("/addworker")
+async def add_worker_endpoint(firstname: str, lastname: str, card: str):
+    max_id = max([tup[0] for tup in db_management.select_all('Workers', ['WorkerID'])])
+    db_management.insert('Workers', (max_id + 1, firstname, lastname, 0.0, card))
+    return {'success': f'Worker {firstname} {lastname} added successfully.'}
 
-def next_stop(bus_id: int)
+
+@app.get("/addcourse/{course_name}")
+async def add_course_endpoint(course_name: str, stops: str):
+    max_id = max([tup[0] for tup in db_management.select_all('Courses', ['CourseID'])])
+    db_management.insert('Courses', (max_id + 1, course_name))
+    stops = stops.split(',')
+    for stop_number, stop in enumerate(stops):
+        db_management.insert('Assignments', (max_id + 1, stop, stop_number))
+    return {'success': f'Course {course_name} added successfully.'}
+
+
+@app.get("/addstop/{stop_name}")
+async def add_stop_endpoint(stop_name: str):
+    max_id = max([tup[0] for tup in db_management.select_all('Stops', ['StopID'])])
+    db_management.insert('Stops', (max_id + 1, stop_name))
+    return {'success': f'Stop {stop_name} added successfully.'}
+
+
+# --- MQTT COMMUNICATION ---
+
+
+
+# --- OTHER METHODS ---
+
+
+def next_stop(bus_id: int):
     bus_data = db_management.select('Buses', ['BusID', 'CourseID', 'StopsInAscendingOrder', 'StopNumber'],
                                     [('BusID', bus_id)])
     if not bus_data:
@@ -119,6 +163,7 @@ def next_stop(bus_id: int)
         new_stop_name = db_management.select('Stops', ['StopName'], [('StopID', new_stop_id)])[0][0]
         return {'success': f'{new_stop_number_to_display}. {new_stop_name}'}
 
+
 def choose_course(bus_id: int, course_name: str, direction: bool):
     course_id = db_management.select('Courses', ['CourseID'], [('CourseName', course_name)])[0][0]
     db_management.update('Buses', ('CourseID', course_id), ('BusID', bus_id))
@@ -130,5 +175,32 @@ def choose_course(bus_id: int, course_name: str, direction: bool):
     db_management.update('Buses', ('StopNumber', stop_number), ('BusID', bus_id))
 
 
+def add_stop_to_workers(bus_id: int):
+    workers_in_the_bus = [tup[0] for tup in db_management.select('CurrentRides', ['WorkerID', 'StopsTraveled'],
+                                                                 [('BusID', bus_id)])]
+    for worker_id, stops_traveled_already in workers_in_the_bus:
+        db_management.update('CurrentRides', ('StopsTraveled', stops_traveled_already + 1), ('BusID', bus_id))
+
+
+def card_used(card_id: str, bus_id: int):
+    worker_id = db_management.select('Workers', ['WorkerID'], [('CardID', card_id)])[0][0]
+    riding_workers = [tup[0] for tup in db_management.select_all('CurrentRides', ['WorkerID'])]
+    if worker_id in riding_workers:
+        worker_gets_out(worker_id)
+    else:
+        worker_gets_in(worker_id, bus_id)
+
+
+def worker_gets_in(worker_id: int, bus_id: int):
+    max_ride_id = max([tup[0] for tup in db_management.select_all('CurrentRides', ['RideID'])])
+    db_management.insert('CurrentRides', (max_ride_id + 1, worker_id, bus_id, 0))
+
+
+def worker_gets_out(worker_id: int):
+    db_management.delete('CurrentRides', ('WorkerID', worker_id))
+    current_balance = db_management.select('Workers', ['WorkersBalance'], [('WorkerID', worker_id)])[0][0]
+    db_management.update('Workers', ('WorkersBalance', current_balance - 1.0), ('WorkerID', worker_id))
+
+
 if __name__ == '__main__':
-    uvicorn.run(app, host="0.0.0.0", port=55555)
+    uvicorn.run(app, host="0.0.0.0", port=55556)
