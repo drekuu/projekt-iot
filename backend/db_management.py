@@ -119,6 +119,6 @@ def print_db():
 
 
 if __name__ == '__main__':
-    # init_db()
-    # insert_example()
+    init_db()
+    insert_example()
     print_db()

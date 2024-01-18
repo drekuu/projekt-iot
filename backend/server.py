@@ -87,7 +87,7 @@ async def next_stop(bus_id: int):
         return {'success': f'{new_stop_number_to_display}. {new_stop_name}'}
 
 
-@app.get("/choosecourse")
+@app.get("/choosecourse/{bus}")
 async def choose_course(bus: int, course: str, direction: bool):
     """
     :param bus: Bus ID

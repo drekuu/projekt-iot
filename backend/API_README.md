@@ -58,15 +58,14 @@ if there is no bus with provided id:
         "error": "No bus with ID <provided_bus_id>."
     }
 
-### /choosecourse
+### /choosecourse/<bus_id>
 Proper request should include query parameters:
-* bus - Bus ID
 * course - Course ID
 * direction - true if beginning from the first stop of the course, false if from the last one
 
 Example:
 
-    /choosecourse?bus=4&course=LongCourse&direction=false
+    /choosecourse/4?course=LongCourse&direction=false
 
 Response:
 
