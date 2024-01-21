@@ -5,7 +5,7 @@ attributes: dict[str, str] = {
     'Assignments': '(CourseID, StopID, StopNumber)',
     'Workers': '(WorkerID, WorkerFirstName, WorkerLastName, WorkerBalance, WorkerCardID)',
     'Buses': '(BusID, CourseID, StopsInAscendingOrder, StopNumber)',
-    'CurrentRides': '(RideID, WorkerID, StopsTraveled)'
+    'CurrentRides': '(RideID, WorkerID, BusID, StopsTraveled)'
 }
 
 
@@ -119,6 +119,6 @@ def print_db():
 
 
 if __name__ == '__main__':
-    # init_db()
-    # insert_example()
+    init_db()
+    insert_example()
     print_db()
