@@ -26,9 +26,7 @@ Response:
 
 ### message choose_course
 
-    choose_course?bus=<BUS_ID>&course=<COURSE_ID>&direction=<DIRECTION>
-
-DIRECTION argument is 1 (start from the first stop) or 0 (start from the last stop)
+    choose_course?bus=<BUS_ID>&course=<COURSE_NAME>
 
 Response:
 
@@ -44,8 +42,14 @@ Response:
 
 * Worker gets out from the bus:
 
-      Worker <WORKER_ID> gets out from the bus
+      <WORKER_BALANCE>
 
 * Worker gets into the bus:
 
-      Worker <WORKER_ID> gets into the bus <BUS_ID>
+  * Valid card ID:
+  
+        success
+
+  * Invalid card ID:
+  
+        error

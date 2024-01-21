@@ -87,20 +87,15 @@ VALUES
     (20, "Grace", "Cooper", 510.70, "W01234");
 
 INSERT INTO BUSES
-    (BusID, CourseID, StopsInAscendingOrder, StopNumber)
+    (BusID, CourseID, StopNumber)
 VALUES
-    (1, 3, 1, 3),
-    (2, 2, 1, 4),
-    (3, 3, 0, 5),
-    (4, null, null, null),
-    (5, 1, 1, 4),
-    (6, 1, 1, 8),
-    (7, 2, 0, 1),
-    (8, 1, 0, 11),
-    (9, 2, 0, 7),
-    (10, 1, 0, 2);
-
--- INSERT INTO CurrentRides
---     (RideID, WorkerID, StopsTraveled)
--- VALUES
---     ();
+    (1, 3, 3),
+    (2, 2, 4),
+    (3, 3, 5),
+    (4, null, null),
+    (5, 1, 4),
+    (6, 1, 8),
+    (7, 2, 1),
+    (8, 1, 11),
+    (9, 2, 7),
+    (10, 1, 2);

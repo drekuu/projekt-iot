@@ -23,8 +23,8 @@ def next_stop():
     publish_message("buses/driver", f"next_stop?bus={str(BUS_ID)}")
 
 
-def choose_course(course_name, direction: int):
-    publish_message("buses/driver", f'choose_course?bus={BUS_ID}&course={course_name}&direction={direction}')
+def choose_course(course_name):
+    publish_message("buses/driver", f'choose_course?bus={BUS_ID}&course={course_name}')
 
 
 def use_card():
@@ -52,9 +52,7 @@ def run():
             for course_id, course_name in courses:
                 courses_dict[course_id] = course_name
                 print(f'{course_id}. {course_name}')
-            course_id = int(input())
-            direction = int(input('\nStart from\n[1] First stop\n[2] Last stop\n'))
-            choose_course(courses_dict[course_id], direction)
+            choose_course(courses_dict[int(input())])
         elif option == '3':
             use_card()
         else:

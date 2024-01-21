@@ -1,7 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
 import db_management
-from sqlite3 import OperationalError
 from mqtt_server import run_mqtt_server
 
 app = FastAPI()
@@ -98,7 +97,6 @@ async def add_stop_endpoint(stop_name: str):
     max_id = max([tup[0] for tup in db_management.select_all('Stops', ['StopID'])])
     db_management.insert('Stops', (max_id + 1, stop_name))
     return {'success': f'Stop {stop_name} added successfully.'}
-
 
 
 if __name__ == '__main__':
