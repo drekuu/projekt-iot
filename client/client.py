@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import sys
 from typing import Tuple
 from config import *
 import RPi.GPIO as GPIO
@@ -7,14 +8,13 @@ import paho.mqtt.client as mqtt
 from mfrc522 import MFRC522
 import threading
 import time
-import sys
 import datetime
 from models import *
 from ui import *
-import urllib.request, json 
+import urllib.request, json
 
 rfid = MFRC522()
-server_ip = "10.108.33.124"
+server_ip = "10.108.33.123"
 
 bus_id = 0
 
@@ -65,6 +65,7 @@ def on_green_button_while_on_route(_) -> None:
         GPIO.remove_event_detect(buttonGreen)
         GPIO.remove_event_detect(buttonRed)
         route_index = 0
+        current_stop_index = 0
         select_route()
         
 
@@ -86,17 +87,18 @@ def on_green_pressed_while_selecting_route(_) -> None:
     GPIO.remove_event_detect(buttonGreen)
     begin_route()
 
-def on_card_scanned(uid: int) -> None:
+def on_card_scanned(uid: list[int]) -> None:
     global last_card_scan_value_time
     global current_stop_index
     global routes
     global route_index
-    print(f'scanned {uid}')
+    uid_int = int(''.join(list(map(lambda e: str(e), uid))))
+    print(f'scanned {uid_int}')
     (last_value, last_time) = last_card_scan_value_time
     if last_time is not None and last_time + datetime.timedelta(seconds=7) < datetime.datetime.now():
         return
-    last_card_scan_value_time = (uid, datetime.datetime.now())
-    client.publish("buses/worker", f"use_card?card={uid}&bus={bus_id}")
+    last_card_scan_value_time = (uid_int, datetime.datetime.now())
+    client.publish("buses/worker", f"use_card?card={uid_int}&bus={bus_id}")
 
 def listen_rfid() -> None:
     global stop_rfid_polling
@@ -117,10 +119,17 @@ def listen_rfid() -> None:
 def select_route() -> Route:
     global routes
     global route_index
+    # GPIO.add_event_detect(encoderLeft, GPIO.FALLING, callback=on_encoder_left_while_selecting_route, bouncetime=500)
+    # GPIO.add_event_detect(encoderRight, GPIO.FALLING, callback=on_encoder_right_while_selecting_route, bouncetime=500)
+    # GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=on_green_pressed_while_selecting_route, bouncetime=500)
+    timer = threading.Timer(3, add_callbacks)
+    timer.start()
+    draw_routes_menu(routes, route_index)
+
+def add_callbacks():
     GPIO.add_event_detect(encoderLeft, GPIO.FALLING, callback=on_encoder_left_while_selecting_route, bouncetime=500)
     GPIO.add_event_detect(encoderRight, GPIO.FALLING, callback=on_encoder_right_while_selecting_route, bouncetime=500)
     GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=on_green_pressed_while_selecting_route, bouncetime=500)
-    draw_routes_menu(routes, route_index)
 
 
 def begin_route() -> None:
@@ -147,7 +156,7 @@ def on_mqtt_message(client, userdata, message):
     timer.start()
 
 def fetch_routes() -> list[Route]:
-    with urllib.request.urlopen(f'{server_ip}:55555/courses') as url:
+    with urllib.request.urlopen(f'http://{server_ip}:55555/courses') as url:
         data = json.load(url)
         for route_name in data:
             stops = map(lambda stop_name: Stop(stop_name), data[route_name])
@@ -156,25 +165,35 @@ def fetch_routes() -> list[Route]:
 
 
 if __name__ == "__main__":
-    disp.Init()
-    disp.clear()
+    try:
+        disp.Init()
+        disp.clear()
 
-    client.connect(server_ip)
-    client.on_message = on_mqtt_message
-    client.loop_start()
-    client.subscribe("server/notify")
+        client.connect(server_ip)
+        client.on_message = on_mqtt_message
+        client.loop_start()
+        client.subscribe("response/#")
 
-    routes = fetch_routes()
+        routes = fetch_routes()
 
-    # r1s1 = Stop("Os. Sobieskiego")
-    # r1s2 = Stop("Szymanowskiego")
-    # r1s3 = Stop("Kurpinskiego")
-    # r1s4 = Stop("Al. Solidarnosci")
-    # route1 = Route("Tramwaj 16", [r1s1, r1s2, r1s3, r1s4])
-    # route2 = Route("Tramwaj 12", [])
-    # route3 = Route("Tramwaj 14", [])
-    # route4 = Route("Autobus 169", [])
-    # routes = [route1, route2, route3, route4]
-    select_route()
-    while True:
-        _ = input()
+        # r1s1 = Stop("Os. Sobieskiego")
+        # r1s2 = Stop("Szymanowskiego")
+        # r1s3 = Stop("Kurpinskiego")
+        # r1s4 = Stop("Al. Solidarnosci")
+        # route1 = Route("Tramwaj 16", [r1s1, r1s2, r1s3, r1s4])
+        # route2 = Route("Tramwaj 12", [r1s1, r1s2, r1s3, r1s4])
+        # route3 = Route("Tramwaj 14", [r1s1, r1s2, r1s3, r1s4])
+        # route4 = Route("Autobus 169", [r1s1, r1s2, r1s3, r1s4])
+        # routes = [route1, route2, route3, route4]
+        select_route()
+
+        while True:
+            _ = input()
+    except Exception as e:
+        print('cleaning up')
+        GPIO.cleanup()
+        raise e
+    except KeyboardInterrupt as e:
+        print('cleaning up')
+        GPIO.cleanup()
+        raise e
