@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 from db_management import select_all
-BROKER_IP = "0.0.0.0"
+BROKER_IP = "10.108.33.123"
 BUS_ID = 1
 CARD_ID = 'W12345'
 

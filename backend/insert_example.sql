@@ -65,37 +65,11 @@ VALUES
 INSERT INTO Workers
     (WorkerID, WorkerFirstName, WorkerLastName, WorkerBalance, WorkerCardID)
 VALUES
-    (1, "John", "Smith", 500.00, "W12345"),
-    (2, "Emily", "Johnson", 700.50, "W67890"),
-    (3, "Daniel", "Davis", 450.25, "W23456"),
-    (4, "Jessica", "Williams", 600.75, "W78901"),
-    (5, "Michael", "Jones", 550.20, "W34567"),
-    (6, "Olivia", "Brown", 800.00, "W89012"),
-    (7, "William", "Miller", 350.30, "W45678"),
-    (8, "Sophia", "Anderson", 900.50, "W90123"),
-    (9, "Christopher", "Taylor", 480.90, "W56789"),
-    (10, "Ava", "Martinez", 620.40, "W01234"),
-    (11, "Ryan", "Garcia", 550.75, "W12340"),
-    (12, "Emma", "Lopez", 720.60, "W23450"),
-    (13, "Matthew", "Perez", 420.25, "W34560"),
-    (14, "Isabella", "Hill", 670.80, "W45670"),
-    (15, "Andrew", "Turner", 580.30, "W56780"),
-    (16, "Mia", "Clark", 750.90, "W67890"),
-    (17, "Ethan", "Ward", 400.50, "W78901"),
-    (18, "Amelia", "Fisher", 530.40, "W89012"),
-    (19, "Logan", "Baker", 680.25, "W90123"),
-    (20, "Grace", "Cooper", 510.70, "W01234");
+    (1, "John", "Smith", 500.00, "25111252110228"),
+    (2, "Emily", "Johnson", 700.50, "187121523413");
+
 
 INSERT INTO BUSES
     (BusID, CourseID, StopNumber)
 VALUES
-    (1, 3, 3),
-    (2, 2, 4),
-    (3, 3, 5),
-    (4, null, null),
-    (5, 1, 4),
-    (6, 1, 8),
-    (7, 2, 1),
-    (8, 1, 11),
-    (9, 2, 7),
-    (10, 1, 2);
+    (0, null, null);

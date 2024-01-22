@@ -2,6 +2,7 @@ import uvicorn
 from fastapi import FastAPI
 import db_management
 from mqtt_server import run_mqtt_server
+from threading import Thread
 
 app = FastAPI()
 
@@ -97,5 +98,5 @@ async def add_stop_endpoint(stop_name: str):
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host="0.0.0.0", port=5555)
-    run_mqtt_server()
+    Thread(target=run_mqtt_server).start()
+    uvicorn.run(app, host="0.0.0.0", port=55555)

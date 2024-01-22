@@ -27,24 +27,12 @@ BUS_NOT_ON_ROUTE = 3
 def process_message(client, userdata, message):
     global CLIENT
     message_decoded = (str(message.payload.decode("utf-8"))).split(".")[0]
+    print(message_decoded)
     message_dict = query_string_to_dict(message_decoded)
     if 'next_stop' in message_dict:
-        result_code = next_stop(message_dict['next_stop']['bus'])
-        if result_code == ROUTE_ENDED:
-            CLIENT.publish('response/success', 'end')
-        elif result_code == NO_SUCH_BUS:
-            CLIENT.publish('response/error', f'no bus')
-        elif result_code == BUS_NOT_ON_ROUTE:
-            CLIENT.publish('response/error', 'no route')
-        else:
-            CLIENT.publish('response/success', result_code)
+        next_stop(message_dict['next_stop']['bus'])
     elif 'choose_course' in message_dict:
         choose_course(message_dict['choose_course']['bus'], message_dict['choose_course']['course'])
-        course_id = db_management.select('Courses', ['CourseID'], [('CourseName',
-                                                                    message_dict['choose_course']['course'])])[0][0]
-        stop_id = db_management.select('Assignments', ['StopID'], [('CourseID', course_id), ('StopNumber', 1)])[0][0]
-        stop_name = db_management.select('Stops', ['StopName'], [('StopID', stop_id)])[0][0]
-        CLIENT.publish('response/success', f'1-{stop_name}')
     elif 'use_card' in message_dict:
         result_code = card_used(message_dict['use_card']['card'], message_dict['use_card']['bus'])
         CLIENT.publish('response/success', result_code)
@@ -107,21 +95,25 @@ def add_stop_to_workers(bus_id: int):
 
 def card_used(card_id: str, bus_id: int):
     riding_workers = [tup[0] for tup in db_management.select_all('CurrentRides', ['WorkerCardID'])]
-    if card_id in riding_workers:
+    if int(card_id) in riding_workers:
         return worker_gets_out(card_id)
     else:
         return worker_gets_in(card_id, bus_id)
 
 
 def worker_gets_in(card_id: str, bus_id: int):
-    if card_id not in [tup[0] for tup in db_management.select_all('Workers', ['WorkerCardID'])]:
-        return 'error'
+    if int(card_id) not in [tup[0] for tup in db_management.select_all('Workers', ['WorkerCardID'])]:
+        return 'Invalid card.'
     try:
         max_ride_id = max([tup[0] for tup in db_management.select_all('CurrentRides', ['RideID'])])
     except ValueError:
         max_ride_id = 0
     db_management.insert('CurrentRides', (max_ride_id + 1, card_id, bus_id, 0))
-    return f'success'
+    return f'Card validated succesfully.'
+
+
+def course_stopped(bus_id: int):
+    pass
 
 
 def worker_gets_out(card_id: str):
@@ -129,7 +121,7 @@ def worker_gets_out(card_id: str):
     db_management.delete('CurrentRides', ('WorkerCardID', card_id))
     current_balance = db_management.select('Workers', ['WorkerBalance'], [('WorkerCardID', card_id)])[0][0]
     db_management.update('Workers', ('WorkerBalance', current_balance - stops_traveled), ('WorkerCardID', card_id))
-    return str(current_balance - stops_traveled)
+    return f'Balance after ride: {current_balance - stops_traveled}.'
 
 
 if __name__ == "__main__":
