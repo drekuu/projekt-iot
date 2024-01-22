@@ -11,9 +11,12 @@ import sys
 import datetime
 from models import *
 from ui import *
+import urllib.request, json 
 
 rfid = MFRC522()
 server_ip = "10.108.33.124"
+
+bus_id = 0
 
 route_index = 0
 routes: list[Route] = []
@@ -53,15 +56,14 @@ def on_green_button_while_on_route(_) -> None:
     global stop_rfid_polling
 
     route = routes[route_index]
+    client.publish("buses/driver", f"next_stop?bus={bus_id}")
     if current_stop_index < len(route.stops) - 1:
         current_stop_index += 1
         draw_stops_screen(route, current_stop_index)
-        client.publish("worker/notify", f"NEXT;{routes[route_index].name};{current_stop_index}")
     else:
         stop_rfid_polling = True
         GPIO.remove_event_detect(buttonGreen)
         GPIO.remove_event_detect(buttonRed)
-        client.publish("worker/notify", f"FINISH;{routes[route_index].name}")
         route_index = 0
         select_route()
         
@@ -75,7 +77,7 @@ def on_red_button_while_on_route(_) -> None:
     route_index = 0
     stop_rfid_polling = True
     current_stop_index = None
-    client.publish("worker/notify", f"END;{routes[route_index].name}")
+    #client.publish("worker/notify", f"END;{routes[route_index].name}")
     select_route()
 
 def on_green_pressed_while_selecting_route(_) -> None:
@@ -94,7 +96,7 @@ def on_card_scanned(uid: int) -> None:
     if last_time is not None and last_time + datetime.timedelta(seconds=7) < datetime.datetime.now():
         return
     last_card_scan_value_time = (uid, datetime.datetime.now())
-    client.publish("worker/notify", f"{uid};{routes[route_index].name};{current_stop_index}")
+    client.publish("buses/worker", f"use_card?card={uid}&bus={bus_id}")
 
 def listen_rfid() -> None:
     global stop_rfid_polling
@@ -129,7 +131,7 @@ def begin_route() -> None:
     current_stop_index = 0
     GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=on_green_button_while_on_route, bouncetime=500)
     GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=on_red_button_while_on_route, bouncetime=500)
-    client.publish("worker/notify", f"START;{routes[route_index].name}")
+    client.publish("buses/driver", f"choose_course?bus={bus_id}&course={routes[route_index].name}")
     draw_stops_screen(routes[route_index], current_stop_index)
     stop_rfid_polling = False
     rfid_thread = threading.Thread(target=listen_rfid)
@@ -139,29 +141,40 @@ def begin_route() -> None:
 
 def on_mqtt_message(client, userdata, message):
     message_decoded = str(message.payload.decode('utf-8'))
-    print(f'Message received: {message_decoded}')
+    print(f'message received: {message_decoded}')
     draw_message(message_decoded)
     timer = threading.Timer(7, draw_stops_screen, args=(routes[route_index], current_stop_index))
     timer.start()
+
+def fetch_routes() -> list[Route]:
+    with urllib.request.urlopen(f'{server_ip}:55555/courses') as url:
+        data = json.load(url)
+        for route_name in data:
+            stops = map(lambda stop_name: Stop(stop_name), data[route_name])
+            routes.append(Route(route_name, list(stops)))
+    return routes
+
 
 if __name__ == "__main__":
     disp.Init()
     disp.clear()
 
-    client.connect("localhost")
+    client.connect(server_ip)
     client.on_message = on_mqtt_message
     client.loop_start()
     client.subscribe("server/notify")
 
-    r1s1 = Stop("Os. Sobieskiego")
-    r1s2 = Stop("Szymanowskiego")
-    r1s3 = Stop("Kurpinskiego")
-    r1s4 = Stop("Al. Solidarnosci")
-    route1 = Route("Tramwaj 16", [r1s1, r1s2, r1s3, r1s4])
-    route2 = Route("Tramwaj 12", [])
-    route3 = Route("Tramwaj 14", [])
-    route4 = Route("Autobus 169", [])
-    routes = [route1, route2, route3, route4]
+    routes = fetch_routes()
+
+    # r1s1 = Stop("Os. Sobieskiego")
+    # r1s2 = Stop("Szymanowskiego")
+    # r1s3 = Stop("Kurpinskiego")
+    # r1s4 = Stop("Al. Solidarnosci")
+    # route1 = Route("Tramwaj 16", [r1s1, r1s2, r1s3, r1s4])
+    # route2 = Route("Tramwaj 12", [])
+    # route3 = Route("Tramwaj 14", [])
+    # route4 = Route("Autobus 169", [])
+    # routes = [route1, route2, route3, route4]
     select_route()
     while True:
         _ = input()
