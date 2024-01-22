@@ -38,19 +38,16 @@ async def workers_endpoint():
 
 @app.get("/buses")
 async def buses_endpoint():
-    buses_data = db_management.select_all('Buses', ['BusID', 'CourseID', 'StopsInAscendingOrder', 'StopNumber'])
+    buses_data = db_management.select_all('Buses', ['BusID', 'CourseID', 'StopNumber'])
     result = {}
-    for bus_id, course_id, stops_order, stop_number in buses_data:
+    for bus_id, course_id, stop_number in buses_data:
         if not course_id:
             result[bus_id] = {}
         else:
             course_name = db_management.select('Courses', ['CourseName'], [('CourseID', course_id)])[0][0]
-            stop_number = stop_number
-            direction = 'right' if stops_order else 'left'
             result[bus_id] = {
                 'course_name': course_name,
-                'stop_number': stop_number,
-                'direction': direction
+                'stop_number': stop_number
             }
     return result
 
@@ -82,13 +79,13 @@ async def add_worker_endpoint(firstname: str, lastname: str, card: str):
     return {'success': f'Worker {firstname} {lastname} added successfully.'}
 
 
-@app.get("/addcourse/{course_name}")
+@app.get("/addcourse/{course_name}/{stops}")
 async def add_course_endpoint(course_name: str, stops: str):
     max_id = max([tup[0] for tup in db_management.select_all('Courses', ['CourseID'])])
     db_management.insert('Courses', (max_id + 1, course_name))
     stops = stops.split(',')
     for stop_number, stop in enumerate(stops):
-        db_management.insert('Assignments', (max_id + 1, stop, stop_number))
+        db_management.insert('Assignments', (max_id + 1, stop, stop_number + 1))
     return {'success': f'Course {course_name} added successfully.'}
 
 
@@ -100,5 +97,5 @@ async def add_stop_endpoint(stop_name: str):
 
 
 if __name__ == '__main__':
-    uvicorn.run(app, host="0.0.0.0", port=55556)
+    uvicorn.run(app, host="0.0.0.0", port=5555)
     run_mqtt_server()
