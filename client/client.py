@@ -95,7 +95,7 @@ def on_card_scanned(uid: list[int]) -> None:
     uid_int = int(''.join(list(map(lambda e: str(e), uid))))
     print(f'scanned {uid_int}')
     (last_value, last_time) = last_card_scan_value_time
-    if last_time is not None and last_time + datetime.timedelta(seconds=7) < datetime.datetime.now():
+    if last_time is not None and last_time + datetime.timedelta(seconds=7) > datetime.datetime.now():
         return
     last_card_scan_value_time = (uid_int, datetime.datetime.now())
     client.publish("buses/worker", f"use_card?card={uid_int}&bus={bus_id}")
