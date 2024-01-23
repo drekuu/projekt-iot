@@ -6,9 +6,14 @@ let maxBalance = 200;
 let formData = {
     id: '',
     firstName: '',
-    lastName: '',
-    balance: ''
+    lastName: ''
 }
+
+let bonusData = {
+    worker_id: '',
+    bonus: 0
+}
+const baseUrl = "http://localhost:5173/api"
 const workersUrl = "http://localhost:5173/api/workers"
 
 onMount(async ()=>{
@@ -22,6 +27,7 @@ async function getEmployeesData(){
         const result = Object.keys(data).map(key => {
             const entry = data[key];
             return {
+                worker_id: key,
                 card_id: entry.card_id,
                 first_name: entry.first_name,
                 last_name: entry.last_name,
@@ -34,31 +40,54 @@ async function getEmployeesData(){
     }
 }
 
-function updateEmployeeBalance(employeeId, newBalance){
-    const id = employees.findIndex(employee => employee.card_id === employeeId)
-    if(id !== -1){
-        const updatedEmployees = employees;
-        updatedEmployees[id].balance = newBalance;
-        employees = updatedEmployees; 
-    }
-}
-
-function addEmployee(){
+async function addEmployee(){
     if(!formData.id){
         console.log('invalid input');
         return;
     }
-    employees = [...employees, {id: formData.id,
-                                first_name: formData.firstName,
-                                lastName: formData.lastName, 
-                                balance: formData.balance}]
-    let form = document.getElementById('add_form');
-    form?.reset;
+    let data = {firstname: formData.firstName, lastname: formData.lastName, card: formData.id}
+    try{
+        const queryParams = new URLSearchParams(data);
+        const url = `/addworker?${queryParams.toString()}`
+        const response = await fetch(baseUrl + url, {
+            method: "POST", 
+            headers: {
+                'Content-Type': 'application/json',
+            }, 
+            body: JSON.stringify(data)
+        })
+        if(response.ok){
+            console.log("Form data sent successfully");
+        }else{
+            console.error("error sending form data", response.status);
+        }
+    }catch(e){
+        console.log(e)
+    }
     formData = {
         id: '',
         firstName: '',
-        lastName: '',
-        balance: ''
+        lastName: ''
+    }
+}
+
+async function editBalance(){
+    if(bonusData.bonus == null) bonusData.bonus = 0.0
+    try{
+        const url = `/addbalance/${bonusData.worker_id}?value=${bonusData.bonus}`
+        const response = await fetch(baseUrl + url, {
+            method: "POST", 
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        })
+        if(response.ok){
+            console.log("Form data sent successfully");
+        }else{
+            console.error("error sending form data", response.status);
+        }
+    }catch(e){
+        console.log(e);
     }
 }
 
@@ -68,37 +97,23 @@ function addEmployee(){
     <h1 class=" text-xl"><strong>Employees List</strong></h1>
     <table class=" w-4/6 text-lg border-collapse border-solid border-black border-2">
         <tr>
+            <th>Worker ID</th>
             <th>Card ID</th>
             <th>First Name</th>
             <th>Last Name</th>
-            <th class="">Balance</th>
+            <th>Balance</th>
         </tr>
         {#each employees as employee}
             <tr class="">
+                <td>{employee.worker_id}</td>
                 <td>{employee.card_id}</td>
                 <td>{employee.first_name}</td>
                 <td>{employee.last_name}</td>
                 <td>
-                <div class=" flex flex-row justify-between px-2">
-
-                    {#if editEmployeeId !== employee.card_id}
-                        <h2 class=" w-10 border-2 border-white">
-                            {employee.balance}
-                        </h2>
-                        <button on:click={()=> editEmployeeId = employee.card_id}>
-                            <i class="fa-solid fa-pen-to-square"></i>
-                        </button>
-                    {:else}
-                        <input class=" w-10 border-2 rounded-md" type="number" id="{employee.card_id}" value="{employee.balance}">
-                        <button on:click={()=>{
-                            let balanceVal = document.getElementById(employee.card_id)?.value;
-                            if(balanceVal > maxBalance) balanceVal = maxBalance;
-                            updateEmployeeBalance(employee.card_id, balanceVal);
-                            editEmployeeId = '';
-                        }}>
-                            <i class="fa-solid fa-upload"></i>
-                        </button>    
-                    {/if}
+                <div class=" flex flex-row justify-between gap-4">
+                    <h2 class=" border-2 border-white">
+                        {employee.balance}
+                    </h2> 
                 </div>
                 </td>
             </tr>
@@ -108,33 +123,53 @@ function addEmployee(){
 
     <div class=" flex flex-col justify-center items-center gap-5">
         <h1 class=" text-xl"><strong>Add New Employee</strong></h1>
-        <form action="" id="add_form">
+        <form on:submit|preventDefault={addEmployee} id="add_form" class="flex flex-col justify-center items-center gap-3">
             <table>
                 <tr>
                     <td>
-                        <input class="" type="text" placeholder="Id" id="id" name="id" bind:value={formData.id}>
-                        <label for="id" class=" hidden">Id</label>
-                    </td>
+                        <input type="text" placeholder="Card ID" id="card_id" name="card_id" bind:value={formData.id}>
+                        <label for="card_id" class=" hidden">Card Id</label>
+                    </td>  
                     <td>
-                        <input type="text" placeholder="First Name" id="name" name="firstName" bind:value={formData.first_name}>
+                        <input type="text" placeholder="First Name" id="name" name="firstName" bind:value={formData.firstName}>
                         <label for="name" class=" hidden">First Name</label>
                     </td>
                     <td>
                         <input type="text" placeholder="Last Name" id="lastname" name="lastName" bind:value={formData.lastName}>
                     <label for="lastname" class=" hidden">Last Name</label>
                     </td>
-                    <td>
-                        <input type="value" placeholder="Balance" id="form_balance" name="balance" bind:value={formData.balance}>
-                        <label for="form_balance" class=" hidden">Balance</label>
-                    </td>             
+                       
                 </tr>
             </table>
-            
+            <button type="submit">
+                <i class="fa-solid fa-circle-plus text-4xl"></i>
+            </button>
         </form>
-        <button on:click={addEmployee}>
-            <i class="fa-solid fa-circle-plus text-4xl"></i>
-        </button>
+        
     </div>
+
+    <div class=" flex flex-col justify-center items-center gap-5">
+        <h1 class=" text-xl"><strong>Increase Worker's Balance</strong></h1>
+        <form on:submit|preventDefault={editBalance} id="add_form" class="flex flex-col justify-center items-center gap-3">
+            <table>
+                <tr>
+                    <td>
+                        <input type="text" placeholder="Card ID" id="card_id" name="card_id" bind:value={bonusData.worker_id}>
+                        <label for="card_id" class=" hidden">Card Id</label>
+                    </td>  
+                    <td>
+                        <input type="number" placeholder="Bonus Value" id="bonus" name="bonus" bind:value={bonusData.bonus}>
+                        <label for="bonus" class=" hidden">Bonus Value</label>
+                    </td> 
+                </tr>
+            </table>
+            <button type="submit">
+                <i class="fa-solid fa-circle-plus text-4xl"></i>
+            </button>
+        </form>
+        
+    </div>
+
 
 </div>
 
