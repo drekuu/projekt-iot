@@ -23,7 +23,7 @@ CREATE TABLE Workers (
     WorkerID int NOT NULL,
     WorkerFirstName varchar(255) NOT NULL,
     WorkerLastName varchar(255) NOT NULL,
-    WorkerBalance int NOT NULL,
+    WorkerBalance real NOT NULL,
     WorkerCardID int varchar(255),
     PRIMARY KEY(WorkerID)
 );
@@ -31,15 +31,15 @@ CREATE TABLE Workers (
 CREATE TABLE BUSES (
     BusID int NOT NULL,
     CourseID int NULL,
-    StopsInAscendingOrder int NULL, --Boolean imitation
-    StopID int NULL,
-    FOREIGN KEY(StopID) REFERENCES Stops(StopID)
+    StopNumber int NULL,
+    FOREIGN KEY(StopNumber) REFERENCES Assignments(StopNumber)
 );
 
 CREATE TABLE CurrentRides (
     RideID int NOT NULL,
-    WorkerID int NOT NULL,
+    WorkerCardID int NOT NULL,
+    BusID int NOT NULL,
     StopsTraveled int NOT NULL,
-    PRIMARY KEY(RideID, WorkerID),
-    FOREIGN KEY(WorkerID) REFERENCES Workers(WorkerID)
+    PRIMARY KEY(RideID, WorkerCardID),
+    FOREIGN KEY(WorkerCardID) REFERENCES Workers(WorkerCardID)
 );
