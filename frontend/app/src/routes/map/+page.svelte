@@ -5,8 +5,8 @@
     let courses = {};
     let refreshTime = 5;
 
-    let busesUrl = "http://localhost:5173/api/buses";
-    let coursesUrl = "http://localhost:5173/api/courses";
+    let busesUrl = "http://localhost:55555/buses";
+    let coursesUrl = "http://localhost:55555/courses";
 
     onMount(async ()=>{
         courses = await getCourses();

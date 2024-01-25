@@ -1,12 +1,19 @@
 import uvicorn
 from fastapi import FastAPI
 import db_management
+from fastapi.middleware.cors import CORSMiddleware
 from mqtt_server import run_mqtt_server
 from threading import Thread
 
 app = FastAPI()
 
-
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT"],
+    allow_headers=["Content-Type"],
+)
 # --- INFO ENDPOINTS ---
 
 @app.get("/courses")
@@ -99,4 +106,4 @@ async def add_stop_endpoint(stop_name: str):
 
 if __name__ == '__main__':
     Thread(target=run_mqtt_server).start()
-    uvicorn.run(app, host="localhost", port=55556)
+    uvicorn.run(app, host="localhost", port=55555)

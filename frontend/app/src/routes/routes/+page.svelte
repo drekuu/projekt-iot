@@ -8,9 +8,9 @@
         course_name: '',
         stops: ''
     }
-    const baseUrl = "http://localhost:5173/api";
-    let coursesUrl = "http://localhost:5173/api/courses";
-    let stopsUrl = "http://localhost:5173/api/stops"
+    const baseUrl = "http://localhost:55555";
+    let coursesUrl = "http://localhost:55555/courses";
+    let stopsUrl = "http://localhost:55555/stops"
     onMount(async ()=>{
         courses = await getRoutes();
         stops = await getStops();
@@ -56,13 +56,11 @@
         try{
             const url = `/addstop/${newStopName}`
             const response = await fetch(baseUrl + url, {
-                method: "POST", 
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                method: "GET", 
             })
             if(response.ok){
                 console.log("Form data sent successfully");
+                stops = await getStops();
             }else{
                 console.error("error sending form data", response.status);
             }
@@ -83,19 +81,17 @@
         const stopsArray = stopsString.split(',').map(id => parseInt(id.trim(), 10));
 
         try{
-            let url = `/addcourse/${courseName}?stops=`
-            for(stop in stopsArray){
+            let url = `/addcourse/${courseName}/`
+            stopsArray.forEach(stop =>{
                 url += `${stop},`;
-            }
+            })
             url = url.slice(0, -1);
             const response = await fetch(baseUrl + url, {
-                method: "POST", 
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                method: "GET", 
             })
             if(response.ok){
                 console.log("Form data sent successfully");
+                courses = await getRoutes();
             }else{
                 console.error("error sending form data", response.status);
             }

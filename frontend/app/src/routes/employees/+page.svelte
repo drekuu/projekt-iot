@@ -1,8 +1,6 @@
 <script>
 import { onMount } from 'svelte';
 let employees = [];
-let editEmployeeId;
-let maxBalance = 200;
 let formData = {
     id: '',
     firstName: '',
@@ -13,8 +11,8 @@ let bonusData = {
     worker_id: '',
     bonus: 0
 }
-const baseUrl = "http://localhost:5173/api"
-const workersUrl = "http://localhost:5173/api/workers"
+const baseUrl = "http://localhost:55555"
+const workersUrl = "http://localhost:55555/workers"
 
 onMount(async ()=>{
     employees = await getEmployeesData();
@@ -50,14 +48,11 @@ async function addEmployee(){
         const queryParams = new URLSearchParams(data);
         const url = `/addworker?${queryParams.toString()}`
         const response = await fetch(baseUrl + url, {
-            method: "POST", 
-            headers: {
-                'Content-Type': 'application/json',
-            }, 
-            body: JSON.stringify(data)
+            method: "GET", 
         })
         if(response.ok){
             console.log("Form data sent successfully");
+            employees = await getEmployeesData();
         }else{
             console.error("error sending form data", response.status);
         }
@@ -76,13 +71,11 @@ async function editBalance(){
     try{
         const url = `/addbalance/${bonusData.worker_id}?value=${bonusData.bonus}`
         const response = await fetch(baseUrl + url, {
-            method: "POST", 
-            headers: {
-                'Content-Type': 'application/json',
-            },
+            method: "GET",
         })
         if(response.ok){
             console.log("Form data sent successfully");
+            employees = await getEmployeesData();
         }else{
             console.error("error sending form data", response.status);
         }
@@ -154,8 +147,8 @@ async function editBalance(){
             <table>
                 <tr>
                     <td>
-                        <input type="text" placeholder="Card ID" id="card_id" name="card_id" bind:value={bonusData.worker_id}>
-                        <label for="card_id" class=" hidden">Card Id</label>
+                        <input type="text" placeholder="Worker ID" id="worker_id" name="worker_id" bind:value={bonusData.worker_id}>
+                        <label for="worker_id" class=" hidden">Worker Id</label>
                     </td>  
                     <td>
                         <input type="number" placeholder="Bonus Value" id="bonus" name="bonus" bind:value={bonusData.bonus}>
