@@ -25,7 +25,6 @@ port - 55555
         <bus_id>(string): {     //bus on the route
             "course_name": <course_name>(string),
             "stop_number": <stop_number>(int),
-            "direction": "left" or "right"
         },
         <bus_id>(string): {},   //bus not on the route
         ...
@@ -59,19 +58,18 @@ Query parameters:
 
 Example:
 
-    /addworker?firstname=Adam&lastname=Sandlers&card=W9999
+    /addworker?firstname=Adam&lastname=Sandlers&card=187121523413
 
 Response:
 
     {"success":"Worker Adam Sandlers added successfully."}
 
-### /addCourse/<course_name>
-Query parameters:
+### /addCourse/<course_name>/{stops}
 * stops - Stops as stop1,stop2,...,stopN
 
 Example:
 
-    /addcourse/NewCourse?stops=1,3,5,6
+    /addcourse/NewCourse/1,3,5,6
 
 Response:
 
