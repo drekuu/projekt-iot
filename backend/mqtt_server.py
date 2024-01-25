@@ -112,10 +112,6 @@ def worker_gets_in(card_id: str, bus_id: int):
     return f'Card validated succesfully.'
 
 
-def course_stopped(bus_id: int):
-    pass
-
-
 def worker_gets_out(card_id: str):
     stops_traveled = db_management.select('CurrentRides', ['StopsTraveled'], [('WorkerCardID', card_id)])[0][0]
     db_management.delete('CurrentRides', ('WorkerCardID', card_id))

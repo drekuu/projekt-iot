@@ -99,4 +99,4 @@ async def add_stop_endpoint(stop_name: str):
 
 if __name__ == '__main__':
     Thread(target=run_mqtt_server).start()
-    uvicorn.run(app, host="0.0.0.0", port=55555)
+    uvicorn.run(app, host="localhost", port=55556)
