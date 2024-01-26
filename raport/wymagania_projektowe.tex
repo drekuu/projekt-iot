@@ -2,25 +2,24 @@
 \subsection{Podstawowe wymagania funkcjonalne}
 \subsubsection{Kierowca}
 \begin{enumerate}
-  \item{Jako kierowca chcę zmieniać przystanki za pomocą terminalu w trakcie wykonywania kursu}
-  \item{Jako kierowca chcę wybierać trasę kursu w terminalu przy rozpoczynaniu jazdy}
-  \item{Jako kierowca chcę za pomocą terminalu rozpoczynać jazdę i ją kończyć na dowolnym przystanku}
-  \item{Jako kierowca chcę, aby po dotarciu na ostatni przystanek jazda kończyła się automatycznie}
+  \item{Jako kierowca chcę zmieniać przystanki za pomocą terminalu w trakcie wykonywania kursu}\label{func_1}
+  \item{Jako kierowca chcę wybierać trasę kursu w terminalu przy rozpoczynaniu jazdy}\label{func_2}
+  \item{Jako kierowca chcę za pomocą terminalu rozpoczynać jazdę i ją kończyć po przejechaniu trasy}\label{func_3}
+  \item{Jako kierowca chcę, aby po dotarciu na ostatni przystanek jazda kończyła się automatycznie}\label{func_4}
 \end{enumerate}
 \subsubsection{Pracownik}
 \begin{enumerate}[resume]
-  \item{Jako pracownik chcę wsiadać na przystanku i płacić za przejazd za pomocą swojej karty pracowniczej}
-  \item{Jako pracownik chcę, aby koszt przejazdu był zależny od przejechanych przystanków i był pobierany dopiero po zakończeniu przejazdu (przyłożeniu karty pracowniczej drugi raz)}
+  \item{Jako pracownik chcę wsiadać na przystanku i płacić za przejazd za pomocą swojej karty pracowniczej}\label{func_5}
+  \item{Jako pracownik chcę, aby koszt przejazdu był zależny od przejechanych przystanków i był pobierany dopiero po zakończeniu przejazdu (przyłożeniu karty pracowniczej drugi raz)}\label{func_6}
 \end{enumerate}
 \subsubsection{Administrator}
 \begin{enumerate}[resume]
-  \item{Jako administrator chcę zarządzać\footnote{Poprzez zarządzanie rozumiemy operacje: dodawania, odczytu, aktualizowania i usuwania} wszystkimi kursami}
-  \item{Jako administrator chcę zarządzać wszystkimi przystankami}
-  \item{Jako administrator chcę zarządzać wszystkimi pracownikami, w szczególności ilością pieniędzy na ich koncie}
+  \item{Jako administrator chcę zarządzać\footnote{Poprzez zarządzanie rozumiemy operacje: dodawania, odczytu, aktualizowania i usuwania} wszystkimi kursami}\label{func_7}
+  \item{Jako administrator chcę zarządzać wszystkimi przystankami}\label{func_8}
+  \item{Jako administrator chcę zarządzać wszystkimi pracownikami, w szczególności ilością pieniędzy na ich koncie}\label{func_9}
 \end{enumerate}
 \subsection{Podstawowe wymagania niefunkcjonalne}
 \begin{enumerate}
-  \item{System powinien obsługiwać więcej niż jednego pracownika naraz}
-  \item{System powinien obsługiwać wiele pojazdów (w tym terminalów) naraz}
-  \item{Operacje wykonywane na terminalu (płatność przez pracownika, zmiana trasy i przystanków przez kierowcę) powinny być jak najszybciej przekazywane do bazy danych}
+  \item{System powinien obsługiwać więcej niż jednego pracownika naraz}\label{nfunc_1}
+  \item{Operacje wykonywane na terminalu (płatność przez pracownika, zmiana trasy i przystanków przez kierowcę) powinny być jak najszybciej przekazywane do bazy danych}\label{nfunc_2}
 \end{enumerate}

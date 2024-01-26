@@ -24,10 +24,8 @@
     \node at (0,0) [rectangle,draw] (database) {Baza danych};
     \node [below=of database,rectangle,draw] (rest) {REST API};
     \node [below left=of rest,rectangle,draw] (frontend_admin) {Panel administracyjny};
-    \node [below right=of rest,rectangle,draw] (broker) {Broker MQTT};
+    \node [right=of database,rectangle,draw] (broker) {Broker MQTT};
     \node [below=of broker,rectangle,draw] (terminal) {Terminal};
-    \node [below left=of broker,rectangle] (terminaldotsl) {\dots};
-    \node [below right=of broker,rectangle] (terminaldotsr) {\dots};
 
     \node[below=0.5 of frontend_admin,rectangle,draw,user] (admin) {Administrator};
     \node[below left=0.5 of terminal,rectangle,draw,user] (driver) {Kierowca};
@@ -35,10 +33,9 @@
 
     \draw [<->] (database) -- (rest);
     \draw [<->] (rest) -- (frontend_admin);
-    \draw [<->] (rest) -- (broker);
+    \draw [<->] (database) -- (broker);
     \draw [<->] (broker) -- (terminal);
-    \draw [<->] (broker) -- (terminaldotsl);
-    \draw [<->] (broker) -- (terminaldotsr);
+    \draw [->] (rest) -- (terminal);
 
     \draw [<->] (admin) -- (frontend_admin);
     \draw [<->] (driver) -- (terminal);
@@ -70,26 +67,35 @@
       StopID & int & \node (stops_stopid) {PK}; \\
       StopName & varchar(255) \\
     };
-    \matrix[db,label=Assignments,below=of stops,row 1/.style={nodes={fill=blue!20}},row 2/.style={nodes={fill=blue!20}}] (assignments) {
-      CourseID & int & \node (assignments_courseid) {FK}; \\
-      StopID & int & \node (assignments_stopid) {FK}; \\
-      StopNumber & int \\
+    \matrix[db,label=Assignments,below=of stops,row 1/.style={nodes={fill=yellow!20}},row 2/.style={nodes={fill=yellow!20}}] (assignments) {
+      CourseID & int & \node (assignments_courseid) {PK, FK}; \\
+      StopID & int & \node (assignments_stopid) {PK, FK}; \\
+      StopNumber & int & \node (assignments_stopnumber) {}; \\
+    };
+    \matrix[db,label=Buses,below=of assignments,row 1/.style={nodes={fill=red!20}},row 2/.style={nodes={fill=blue!20}},row 3/.style={nodes={fill=blue!20}}] (assignments) {
+      BusID & int & \node (buses_busid) {PK}; \\
+      CourseID & int & \node (buses_courseid) {FK}; \\
+      StopNumber & int & \node (buses_stopnumber) {FK}; \\
     };
     \matrix[db,label=Workers,below=of assignments,row 1/.style={nodes={fill=red!20}}] (workers) {
       WorkerID & int & \node (workers_workerid) {PK}; \\
       WorkerFirstName & varchar(255) \\
       WorkerLastName & varchar(255) \\
       WorkerBalance & int \\
-      WorkerCardID & varchar(255) \\
+      WorkerCardID & varchar(255) & \node(workers_workercardid) {}; \\
     };
-    \matrix[db,label=CurrentRides,below=of workers,row 1/.style={nodes={fill=red!20}},row 2/.style={nodes={fill=blue!20}}] {
+    \matrix[db,label=CurrentRides,below=of workers,row 1/.style={nodes={fill=red!20}},row 2/.style={nodes={fill=blue!20}},row 3/.style={nodes={fill=blue!20}}] {
       RideID & int & PK \\
-      WorkerID & int & \node (currentrides_workerid) {FK}; \\
+      WorkerCardID & varchar(255) & \node (currentrides_workercardid) {FK}; \\
+      BusID & int & \node(currentrides_busid) {FK}; \\
       StopsTraveled & int \\
     };
     \draw [<-] (courses_courseid.east) -- ++(0.5,0) |- (assignments_courseid.east);
     \draw [<-] (stops_stopid.east) -- ++(0.5,0) |- (assignments_stopid.east);
-    \draw [<-] (workers_workerid.east) -- ++(0.5,0) |- (currentrides_workerid.east);
+    \draw [<-] (workers_workercardid.east) -- ++(0.5,0) |- (currentrides_workercardid.east);
+    \draw [<-] (courses_courseid.east) -- ++(1,0) |- (buses_courseid.east);
+    \draw [<-] (assignments_stopnumber.east) -- ++(0.5,0) |- (buses_stopnumber.east);
+    \draw [<-] (buses_busid.east) -- ++(2,0) |- (currentrides_busid.east);
   \end{tikzpicture}
   \caption{Tabele bazy danych z zaznaczonymi relacjami między nimi}
 \end{figure}
@@ -97,7 +103,7 @@
 \begin{enumerate}
   \item{
     Pracownik wsiada na przystanku, przykłada kartę i po przejechaniu 3 przystanków przykłada ją znowu aby zapłacić i wysiada. \\
-    Zakładamy, że każdy przystanek kosztuje 10, czyli pracownik zapłaci 30.
+    Zakładamy, że każdy przystanek kosztuje 1, czyli pracownik zapłaci 3.
     \begin{figure}[H]
       \centering
       \begin{tikzpicture}[>=Latex,
@@ -115,7 +121,7 @@
       ]
         \matrix[db,label=Workers] (workers) {
           WorkerID & WorkerFirstName & WorkerLastName & WorkerBalance & WorkerCardID \\
-          1 & Jan & Kowalski & 100 & ABC \\
+          1 & Jan & Kowalski & 100 & ABCD \\
         };
       \end{tikzpicture}
       \caption{Dane w bazie przed wykonaniem scenariusza}
@@ -137,17 +143,138 @@
       ]
         \matrix[db,label=Workers] (workers) {
           WorkerID & WorkerFirstName & WorkerLastName & WorkerBalance & WorkerCardID \\
-          1 & Jan & Kowalski & 70 & ABC \\
+          1 & Jan & Kowalski & 97 & ABCD \\
         };
         \matrix[db,label=CurrentRides,below=of workers] {
-          RideID & WorkerID & StopsTraveled \\
+          RideID & WorkerCardID & BusID & StopsTraveled \\
           \vdots \\
-          5 & 1 & 3 \\
+          5 & ABCD & 1 & 3 \\
           \vdots \\
         };
       \end{tikzpicture}
       \caption{Dane w bazie po wykonaniu scenariusza}
     \end{figure}
     W tabeli \verb|Workers| zmieniła się kolumna \verb|WorkerBalance|, a w tabeli \verb|CurrentRides| został dodany nowy rekord.
+  }
+  \item{
+    Kierowca pojazdu który nie jest na żadnej trasie, ustala nową trasę o nazwie \verb|MediumLengthCourse|.
+    \begin{figure}[H]
+      \centering
+      \begin{tikzpicture}[>=Latex,
+        db/.style={
+          draw, matrix of nodes,
+          nodes={
+            node family/text width/.expanded=%
+              \tikzmatrixname-\the\pgfmatrixcurrentcolumn,
+            node family/text width align=left,
+            inner xsep=+.5\tabcolsep, inner ysep=+0pt, align=left},
+          inner sep=.5\pgflinewidth,
+          font=\strut\ttfamily,
+          row 1/.style={nodes={fill=gray!20}}
+        }
+      ]
+        \matrix[db,label=Courses] (courses) {
+          CourseID & CourseName \\
+          \vdots \\
+          2 & MediumLengthCourse \\
+          \vdots \\
+        };
+        \matrix[db,label=Buses,below=of courses] (buses) {
+          BusID & CourseID & StopNumber \\
+          1 & NULL & NULL \\
+        };
+      \end{tikzpicture}
+      \caption{Dane w bazie przed wykonaniem scenariusza}
+    \end{figure}
+    \begin{figure}[H]
+      \centering
+      \begin{tikzpicture}[>=Latex,
+        db/.style={
+          draw, matrix of nodes,
+          nodes={
+            node family/text width/.expanded=%
+              \tikzmatrixname-\the\pgfmatrixcurrentcolumn,
+            node family/text width align=left,
+            inner xsep=+.5\tabcolsep, inner ysep=+0pt, align=left},
+          inner sep=.5\pgflinewidth,
+          font=\strut\ttfamily,
+          row 1/.style={nodes={fill=gray!20}}
+        }
+      ]
+        \matrix[db,label=Buses] (buses) {
+          BusID & CourseID & StopNumber \\
+          1 & 2 & 1 \\
+        };
+      \end{tikzpicture}
+      \caption{Dane w bazie po wykonaniu scenariusza}
+    \end{figure}
+  }
+  \item{
+    Kierowca pojazdu który jest na trasie \verb|ShortCourse|, zmienia przystanek z \verb|Our Company| na \verb|Amusement Park|.
+    \begin{figure}[H]
+      \centering
+      \begin{tikzpicture}[>=Latex,
+        db/.style={
+          draw, matrix of nodes,
+          nodes={
+            node family/text width/.expanded=%
+              \tikzmatrixname-\the\pgfmatrixcurrentcolumn,
+            node family/text width align=left,
+            inner xsep=+.5\tabcolsep, inner ysep=+0pt, align=left},
+          inner sep=.5\pgflinewidth,
+          font=\strut\ttfamily,
+          row 1/.style={nodes={fill=gray!20}}
+        }
+      ]
+        \matrix[db,label=Courses] (courses) {
+          CourseID & CourseName \\
+          \vdots \\
+          3 & ShortCourse \\
+          \vdots \\
+        };
+        \matrix[db,label=Stops,below=of courses] (stops) {
+          StopID & StopName \\
+          \vdots \\
+          12 & Our Company \\
+          \vdots \\
+          14 & Amusement Park \\
+          \vdots \\
+        };
+        \matrix[db,label=Assignments,below=of stops] (assignments) {
+          CourseID & StopID & StopNumber \\
+          \vdots \\
+          3 & 12 & 1 \\
+          3 & 14 & 2 \\
+          \vdots \\
+        };
+        \matrix[db,label=Buses,below=of assignments] (buses) {
+          BusID & CourseID & StopNumber \\
+          1 & 3 & 1 \\
+        };
+      \end{tikzpicture}
+      \caption{Dane w bazie przed wykonaniem scenariusza}
+    \end{figure}
+    \begin{figure}[H]
+      \centering
+      \begin{tikzpicture}[>=Latex,
+        db/.style={
+          draw, matrix of nodes,
+          nodes={
+            node family/text width/.expanded=%
+              \tikzmatrixname-\the\pgfmatrixcurrentcolumn,
+            node family/text width align=left,
+            inner xsep=+.5\tabcolsep, inner ysep=+0pt, align=left},
+          inner sep=.5\pgflinewidth,
+          font=\strut\ttfamily,
+          row 1/.style={nodes={fill=gray!20}}
+        }
+      ]
+        \matrix[db,label=Buses] (buses) {
+          BusID & CourseID & StopNumber \\
+          1 & 3 & 2 \\
+        };
+      \end{tikzpicture}
+      \caption{Dane w bazie po wykonaniu scenariusza}
+    \end{figure}
   }
 \end{enumerate}

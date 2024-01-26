@@ -2,11 +2,288 @@
 \subsection{Wykorzystane języki, technologie}
 \begin{itemize}
   \item{Baza danych - SQLite}
-  \item{REST API - Python}
-  \item{Panel administracyjny - Svelte}
+  \item{REST API - Python, FastAPI}
+  \item{Panel administracyjny - JavaScript, Svelte}
   \item{Broker MQTT - Python}
   \item{Terminal - Python}
 \end{itemize}
 \subsection{Najważniejsze funkcje systemu}
+\subsubsection{Ustalanie trasy przez kierowcę}
+\begin{lstlisting}[language={Python}, caption={Terminal, Lokalizacja: \texttt{client/client.py}}]
+def begin_route() -> None:
+  global stop_rfid_polling
+  global current_stop_index
+  global routes
+  global route_index
+  current_stop_index = 0
+  GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=on_green_button_while_on_route, bouncetime=500)
+  GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=on_red_button_while_on_route, bouncetime=500)
+  client.publish("buses/driver", f"choose_course?bus={bus_id}&course={routes[route_index].name}")
+  draw_stops_screen(routes[route_index], current_stop_index)
+  stop_rfid_polling = False
+  rfid_thread = threading.Thread(target=listen_rfid)
+  rfid_thread.daemon = True
+  rfid_thread.start()
+\end{lstlisting}
+Po wybraniu trasy przez kierowcę terminal komunikuje się z brokerem MQTT poprzez temat \verb|buses/driver| i wysyła mu odpowiednie dane, następnie też aktywowana jest możliwość skanowania karty pracownika zaimplementowana w wątku \verb|rfid_thread|. Dodatkowo funkcjonalność przycisków: zielonego i czerwonego zostaje zmieniona, tak aby była odpowiedzialna już za zmianę przystanków, a wyświetlacz pokazuje przystanki.
+\begin{lstlisting}[language={Python}, caption={Broker MQTT, Lokalizacja: \texttt{backend/mqtt\_server.py}}]
+def choose_course(bus_id: int, course_name: str):
+  course_id = db_management.select('Courses', ['CourseID'], [('CourseName', course_name)])[0][0]
+  db_management.update('Buses', ('CourseID', course_id), ('BusID', bus_id))
+  db_management.update('Buses', ('StopNumber', 1), ('BusID', bus_id))
+\end{lstlisting}
+Broker MQTT po otrzymaniu danych od terminala, aktualizuje bazę danych.
+\subsubsection{Zmiana przystanku przez kierowcę}
+\begin{lstlisting}[language={Python}, caption={Terminal, Lokalizacja: \texttt{client/client.py}}]
+def on_green_button_while_on_route(_) -> None:
+  global current_stop_index
+  global routes
+  global route_index
+  global stop_rfid_polling
+
+  route = routes[route_index]
+  client.publish("buses/driver", f"next_stop?bus={bus_id}")
+  if current_stop_index < len(route.stops) - 1:
+      current_stop_index += 1
+      draw_stops_screen(route, current_stop_index)
+  else:
+      stop_rfid_polling = True
+      GPIO.remove_event_detect(buttonGreen)
+      GPIO.remove_event_detect(buttonRed)
+      route_index = 0
+      current_stop_index = 0
+      select_route()
+\end{lstlisting}
+Przy zmianie przystanku przez kierowcę terminal wysyła dane do brokera MQTT, następnie informacja o aktualnym przystanku na wyświetlaczu zostaje zmieniona. Jeżeli następnego przystanku nie ma, to wtedy trasa jest automatycznie zakończona.
+\begin{lstlisting}[language={Python}, caption={Broker MQTT, Lokalizacja: \texttt{backend/mqtt\_server.py}}]
+def next_stop(bus_id: int):
+  bus_data = db_management.select('Buses', ['BusID', 'CourseID', 'StopNumber'],
+                                  [('BusID', bus_id)])
+  if not bus_data:
+      return NO_SUCH_BUS
+  bus_id, course_id, stop_number = bus_data[0]
+  try:
+      stops = [tup[0] for tup in db_management.select('Assignments', ['StopID'],
+                                                      [('CourseID', course_id)])]
+  except OperationalError:
+      return BUS_NOT_ON_ROUTE
+  new_stop_number = stop_number + 1
+  if new_stop_number == 0 or new_stop_number > len(stops):
+      for attribute_name in ['CourseID', 'StopNumber']:
+          db_management.update('Buses', (attribute_name, 'null'), ('BusID', bus_id))
+      return ROUTE_ENDED
+  else:
+      db_management.update('Buses', ('stopNumber', new_stop_number), ('BusID', bus_id))
+      new_stop_id = db_management.select('Assignments', ['StopID'],
+                                         [('CourseID', course_id), ('stopNumber', new_stop_number)])[0][0]
+      new_stop_name = db_management.select('Stops', ['StopName'], [('StopID', new_stop_id)])[0][0]
+      add_stop_to_workers(bus_id)
+      return f'{new_stop_number}-{new_stop_name}'
+\end{lstlisting}
+Broker MQTT po otrzymaniu danych od terminala aktualizuje przystanek w bazie danych, jeżeli podany pojazd jest na trasie, następnie aktualizowana jest liczba przejechanych przystanków dla każdego pracownika który znajduje się na trasie pojazdu.
+\subsubsection{Płacenie za przejazd przez pracownika}
+\begin{lstlisting}[language={Python}, caption={Terminal, Lokalizacja: \texttt{client/client.py}}]
+def on_card_scanned(uid: list[int]) -> None:
+  global last_card_scan_value_time
+  global current_stop_index
+  global routes
+  global route_index
+  uid_int = int(''.join(list(map(lambda e: str(e), uid))))
+  print(f'scanned {uid_int}')
+  (last_value, last_time) = last_card_scan_value_time
+  if last_time is not None and last_time + datetime.timedelta(seconds=7) > datetime.datetime.now():
+      return
+  last_card_scan_value_time = (uid_int, datetime.datetime.now())
+  client.publish("buses/worker", f"use_card?card={uid_int}&bus={bus_id}")
+\end{lstlisting}
+Po przyłożeniu karty przez pracownika, terminal wysyła dane do brokera MQTT.
+\pagebreak
+\begin{lstlisting}[language={Python}, caption={Broker MQTT, Lokalizacja: \texttt{backend/mqtt\_server.py}}]
+def card_used(card_id: str, bus_id: int):
+  riding_workers = [tup[0] for tup in db_management.select_all('CurrentRides', ['WorkerCardID'])]
+  if int(card_id) in riding_workers:
+      return worker_gets_out(card_id)
+  else:
+      return worker_gets_in(card_id, bus_id)
+
+
+def worker_gets_in(card_id: str, bus_id: int):
+  if int(card_id) not in [tup[0] for tup in db_management.select_all('Workers', ['WorkerCardID'])]:
+      return 'Invalid card.'
+  try:
+      max_ride_id = max([tup[0] for tup in db_management.select_all('CurrentRides', ['RideID'])])
+  except ValueError:
+      max_ride_id = 0
+  db_management.insert('CurrentRides', (max_ride_id + 1, card_id, bus_id, 0))
+  return f'Card validated succesfully.'
+
+
+def worker_gets_out(card_id: str):
+  stops_traveled = db_management.select('CurrentRides', ['StopsTraveled'], [('WorkerCardID', card_id)])[0][0]
+  db_management.delete('CurrentRides', ('WorkerCardID', card_id))
+  current_balance = db_management.select('Workers', ['WorkerBalance'], [('WorkerCardID', card_id)])[0][0]
+  db_management.update('Workers', ('WorkerBalance', current_balance - stops_traveled), ('WorkerCardID', card_id))
+  return f'Balance after ride: {current_balance - stops_traveled}.'
+\end{lstlisting}
+Broker MQTT po otrzymaniu danych od terminala, sprawdza czy pracownik zaczyna, lub kończy przejazd:
+\begin{itemize}
+  \item{jeżeli zaczyna przejazd, to po sprawdzeniu czy taki pracownik istnieje w bazie, zostaje dodany rekord o aktualnym przejeździe,}
+  \item{jeżeli kończy przejazd, to z jego konta zostaje potrącona kwota zależna od przejechanych przystanków, oraz jego przejazd zostaje usunięty z bazy.}
+\end{itemize}
+\subsubsection{Dodanie pieniędzy do konta pracownika przez administratora}
+\begin{lstlisting}[language={JavaScript}, caption={Panel administracyjny, Lokalizacja: \texttt{frontend/app/src/routes/employees/+page.svelte}}]
+async function editBalance(){
+    if(bonusData.bonus == null) bonusData.bonus = 0.0
+    try{
+        const url = `/addbalance/${bonusData.worker_id}?value=${bonusData.bonus}`
+        const response = await fetch(baseUrl + url, {
+            method: "GET",
+        })
+        if(response.ok){
+            console.log("Form data sent successfully");
+            employees = await getEmployeesData();
+        }else{
+            console.error("error sending form data", response.status);
+        }
+    }catch(e){
+        console.log(e);
+    }
+}
+\end{lstlisting}
+Panel administracyjny przekazuje odpowiednie dane do REST API, następnie pobiera zaktualizowane dane o pracownikach.
+\begin{lstlisting}[language={Python}, caption={REST API, Lokalizacja: \texttt{backend/server.py}}]
+@app.get("/addbalance/{worker_id}")
+async def add_balance_endpoint(worker_id: int, value: float):
+    current_balance = db_management.select('Workers', ['WorkerBalance'], [('WorkerID', worker_id)])[0][0]
+    db_management.update('Workers', ('WorkerBalance', current_balance + value), ('WorkerID', worker_id))
+    return {'success': f'Balance of worker with ID {worker_id} has changed from {current_balance} to '
+                        f'{current_balance + value}'}
+\end{lstlisting}
+REST API po otrzymaniu danych, aktualizuje bazę danych.
 \subsection{Implementacja MQTT}
-\subsection{Implementacja szyfrowania i uwierzytelniania}
+\subsubsection{Broker MQTT}
+\begin{lstlisting}[language={Python}, caption={Broker MQTT, Lokalizacja: \texttt{backend/mqtt\_server.py}}]
+import paho.mqtt.client as mqtt
+(...)
+
+broker_ip = "0.0.0.0"
+
+CLIENT = mqtt.Client()
+
+(...)
+
+
+def process_message(client, userdata, message):
+    global CLIENT
+    message_decoded = (str(message.payload.decode("utf-8"))).split(".")[0]
+    print(message_decoded)
+    message_dict = query_string_to_dict(message_decoded)
+    if 'next_stop' in message_dict:
+        next_stop(message_dict['next_stop']['bus'])
+    elif 'choose_course' in message_dict:
+        choose_course(message_dict['choose_course']['bus'], message_dict['choose_course']['course'])
+    elif 'use_card' in message_dict:
+        result_code = card_used(message_dict['use_card']['card'], message_dict['use_card']['bus'])
+        CLIENT.publish('response/success', result_code)
+
+
+def connect_to_broker():
+    CLIENT.connect(broker_ip)
+    CLIENT.on_message = process_message
+    CLIENT.loop_start()
+    CLIENT.subscribe("buses/#")
+
+
+def disconnect_from_broker():
+    CLIENT.loop_stop()
+    CLIENT.disconnect()
+
+
+def run_mqtt_server():
+    connect_to_broker()
+    input()
+
+
+(...)
+
+
+if __name__ == "__main__":
+    run_mqtt_server()
+\end{lstlisting}
+Broker MQTT subskrybuje każdy temat, który zaczyna się od \verb|buses/|, każda wiadomość która jest odbierana przez broker jest w formacie \verb|query string|, natomiast odpowiedzi są wysyłane tematem \verb|response/success|.
+\pagebreak
+\subsubsection{Terminal}
+\begin{lstlisting}[language={Python}, caption={Terminal, Lokalizacja: \texttt{client/client.py}}]
+#!/usr/bin/env python3
+
+import paho.mqtt.client as mqtt
+(...)
+
+server_ip = "10.108.33.123"
+bus_id = 0
+
+client = mqtt.Client()
+(...)
+
+
+def begin_route() -> None:
+    (...)
+    client.publish("buses/driver", f"choose_course?bus={bus_id}&course={routes[route_index].name}")
+    (...)
+
+
+def on_mqtt_message(client, userdata, message):
+    message_decoded = str(message.payload.decode('utf-8'))
+    print(f'message received: {message_decoded}')
+    draw_message(message_decoded)
+    timer = threading.Timer(7, draw_stops_screen, args=(routes[route_index], current_stop_index))
+    timer.start()
+
+
+(...)
+
+
+if __name__ == "__main__":
+    try:
+        disp.Init()
+        disp.clear()
+
+        client.connect(server_ip)
+        client.on_message = on_mqtt_message
+        client.loop_start()
+        client.subscribe("response/#")
+
+        (...)
+
+        while True:
+            _ = input()
+    (...)
+\end{lstlisting}
+Terminal subskrybuje wszystkie tematy zaczynające się od \verb|response/|, oraz publikuje dane na różnych tematach zaczynających się od \verb|buses/|. Dane które są odebrane z \verb|response/| są przekazywane do wyświetlacza, który je pokazuje.
+\subsection{Implementacja terminala}
+\subsubsection{Pobieranie danych o kursach i ich przystankach}
+\begin{lstlisting}[language={Python}, caption={Terminal, Lokalizacja: \texttt{client/client.py}}]
+def fetch_routes() -> list[Route]:
+  with urllib.request.urlopen(f'http://{server_ip}:55555/courses') as url:
+      data = json.load(url)
+      for route_name in data:
+          stops = map(lambda stop_name: Stop(stop_name), data[route_name])
+          routes.append(Route(route_name, list(stops)))
+  return routes
+\end{lstlisting}
+Do pobierania danych o kursach i przystankach terminal wykorzystuje REST API.
+\pagebreak
+\begin{lstlisting}[language={Python}, caption={REST API, Lokalizacja: \texttt{backend/server.py}}]
+@app.get("/courses")
+async def courses_endpoint():
+    result = {}
+    courses = db_management.select_all('Courses', ['CourseID', 'courseName'])
+    for course_id, course_name in courses:
+        stops = db_management.select('Assignments', ['StopID', 'StopNumber'], [('CourseID', course_id)])
+        result[course_name] = ['' for _ in range(len(stops))]
+        for stop_id, stop_number in stops:
+            stop_name = db_management.select('Stops', ['StopName'], [('StopID', stop_id)])[0][0]
+            result[course_name][stop_number-1] = stop_name
+    return result
+\end{lstlisting}
+REST API pobiera z bazy danych kursy, następnie pobiera ich przystanki i je przypisuje do zwracanych danych.

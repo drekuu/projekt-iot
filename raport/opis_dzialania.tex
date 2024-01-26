@@ -1,3 +1,135 @@
 \section{Opis działania i prezentacja interfejsu}
 \subsection{Sposób instalacji i uruchomienia aplikacji}
+\subsubsection{Zawartość plików}
+\begin{itemize}
+  \item{
+    \verb|backend/|
+    \begin{itemize}
+      \item{baza danych - pliki: \verb|db_management.py|, \verb|init.sql|, \verb|insert_example.sql|}
+      \item{REST API - plik: \verb|server.py|}
+      \item{broker MQTT - pliki: \verb|mqtt_server.py|, \verb|mqtt_client_TEST.py|}
+    \end{itemize}
+  }
+  \item{\verb|frontend/app| - panel administracyjny}
+  \item{\verb|client/| - terminal}
+\end{itemize}
+\subsubsection{Instalacja}
+\begin{enumerate}
+  \item{
+    Baza danych
+    \begin{enumerate}
+      \item{przejdź do folderu \verb|backend|}
+      \item{uruchom plik \verb|db_management.py|}
+      \item{w folderze powinien utworzyć się plik \verb|alpha.db|, zawierający przykładowe dane}
+    \end{enumerate}
+  }
+  \item{
+    REST API i broker MQTT
+    \begin{enumerate}
+      \item{zainstaluj wymagane pakiety za pomocą komendy \verb|pip install -r requirements.txt|}
+      \item{
+        upewnij się, że masz zainstalowane i uruchomione \href{https://mosquitto.org/download/}{Mosquitto} \\
+        UWAGA: w pliku konfiguracyjnym Mosquitto powinny się znaleźć następujące linijki, aby urządzenia mogły się połączyć:
+        \begin{lstlisting}[caption={Dodatek do pliku \texttt{mosquitto.conf}}]
+        allow_anonymous true
+        listener 1883 0.0.0.0
+        \end{lstlisting}
+      }
+      \item{uruchom plik \verb|server.py|}
+      \item{działanie REST API można testować pod adresem: \url{http://localhost:55555/docs}}
+    \end{enumerate}
+  }
+  \item{
+    Panel administracyjny
+    \begin{enumerate}
+      \item{upewnij się, że masz zainstalowany \href{https://nodejs.org/en}{Node.js}}
+      \item{przejdź do folderu \verb|frontend/app|}
+      \item{zainstaluj pakiety za pomocą komendy \verb|npm install|}
+      \item{wprowadź komendę \verb|npm run dev|}
+      \item{działanie można testować pod adresem: \url{http://localhost:5173/}}
+    \end{enumerate}
+  }
+  \item{
+    Terminal (wersja Raspberry Pi)
+    \begin{enumerate}
+      \item{przejdź do folderu \verb|client|}
+      \item{otwórz plik \verb|client.py| i zmodyfikuj zmienną \verb|server_ip| tak, aby odpowiadała adresowi IP brokera MQTT}
+      \item{uruchom plik \verb|client.py|}
+    \end{enumerate}
+  }
+  \item{
+    Terminal (wersja testowa)
+    \begin{enumerate}
+      \item{przejdź do folderu \verb|backend|}
+      \item{otwórz plik \verb|mqtt_client_TEST.py| i zmodyfikuj zmienną \verb|BROKER_IP| tak, aby odpowiadała adresowi IP brokera MQTT}
+      \item{uruchom plik \verb|mqtt_client_TEST.py|}
+    \end{enumerate}
+  }
+\end{enumerate}
 \subsection{Przedstawienie działania aplikacji}
+\subsubsection{Panel administracyjny}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{admin-panel/employees}
+  \caption{Widok pracowników w panelu administracyjnym}
+\end{figure}
+Przykładowo dodamy nowego pracownika i dodamy mu pieniądze do stanu konta, wypełniając odpowiednie pola i klikając znak \verb|+|.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{admin-panel/employees-add}
+  \caption{Dodany nowy pracownik}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{admin-panel/routes-course}
+  \caption{Widok przejazdów w panelu administracyjnym, kursy}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{admin-panel/routes-stops}
+  \caption{Widok przejazdów w panelu administracyjnym, przystanki}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.5\textwidth]{admin-panel/routes-add}
+  \caption{Widok przejazdów w panelu administracyjnym, dodawanie nowych danych}
+\end{figure}
+Przykładowo dodamy nowy przystanek o nazwie \verb|Test Stop|, oraz kurs o nazwie \verb|TestCourse|, który będzie go zawierał.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.75\textwidth]{admin-panel/routes-new}
+  \caption{Dodany nowy kurs zawierający nowy przystanek}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{admin-panel/map}
+  \caption{Mapa pojazdów odbywających kursy}
+\end{figure}
+W terminalu zmieniamy przystanek na którym pojazd się znajduje.
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=1\textwidth]{admin-panel/map-nextstop}
+  \caption{Zmiana przystanku widoczna na mapie}
+\end{figure}
+\subsubsection{Terminal (wersja Raspberry Pi)}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.4\textwidth]{terminal-pi/course}
+  \caption{Widok wyboru trasy}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.4\textwidth]{terminal-pi/stop}
+  \caption{Widok aktualnego przystanku na trasie}
+\end{figure}
+\subsubsection{Terminal (wersja testowa)}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.4\textwidth]{terminal-test/menu}
+  \caption{Widok menu}
+\end{figure}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.6\textwidth]{terminal-test/example}
+  \caption{Przykład wyboru kursu, zmiany przystanków i płacenia za przejazd przez pracownika}
+\end{figure}
