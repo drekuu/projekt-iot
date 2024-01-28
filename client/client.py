@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import sys
 from typing import Tuple
 from config import *
 import RPi.GPIO as GPIO
@@ -63,23 +62,10 @@ def on_green_button_while_on_route(_) -> None:
     else:
         stop_rfid_polling = True
         GPIO.remove_event_detect(buttonGreen)
-        GPIO.remove_event_detect(buttonRed)
         route_index = 0
         current_stop_index = 0
         select_route()
         
-
-def on_red_button_while_on_route(_) -> None:
-    global current_stop_index
-    global route_index
-    global stop_rfid_polling
-    GPIO.remove_event_detect(buttonGreen)
-    GPIO.remove_event_detect(buttonRed)
-    route_index = 0
-    stop_rfid_polling = True
-    current_stop_index = None
-    #client.publish("worker/notify", f"END;{routes[route_index].name}")
-    select_route()
 
 def on_green_pressed_while_selecting_route(_) -> None:
     GPIO.remove_event_detect(encoderLeft)
@@ -119,14 +105,11 @@ def listen_rfid() -> None:
 def select_route() -> Route:
     global routes
     global route_index
-    # GPIO.add_event_detect(encoderLeft, GPIO.FALLING, callback=on_encoder_left_while_selecting_route, bouncetime=500)
-    # GPIO.add_event_detect(encoderRight, GPIO.FALLING, callback=on_encoder_right_while_selecting_route, bouncetime=500)
-    # GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=on_green_pressed_while_selecting_route, bouncetime=500)
-    timer = threading.Timer(3, add_callbacks)
+    timer = threading.Timer(3, add_route_selection_callbacks)
     timer.start()
     draw_routes_menu(routes, route_index)
 
-def add_callbacks():
+def add_route_selection_callbacks():
     GPIO.add_event_detect(encoderLeft, GPIO.FALLING, callback=on_encoder_left_while_selecting_route, bouncetime=500)
     GPIO.add_event_detect(encoderRight, GPIO.FALLING, callback=on_encoder_right_while_selecting_route, bouncetime=500)
     GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=on_green_pressed_while_selecting_route, bouncetime=500)
@@ -139,7 +122,6 @@ def begin_route() -> None:
     global route_index
     current_stop_index = 0
     GPIO.add_event_detect(buttonGreen, GPIO.FALLING, callback=on_green_button_while_on_route, bouncetime=500)
-    GPIO.add_event_detect(buttonRed, GPIO.FALLING, callback=on_red_button_while_on_route, bouncetime=500)
     client.publish("buses/driver", f"choose_course?bus={bus_id}&course={routes[route_index].name}")
     draw_stops_screen(routes[route_index], current_stop_index)
     stop_rfid_polling = False
@@ -148,12 +130,23 @@ def begin_route() -> None:
     rfid_thread.start()
 
 
+def handle_buzzer() -> None:
+    GPIO.output(buzzer, GPIO.LOW)
+    time.sleep(1)
+    GPIO.output(buzzer, GPIO.HIGH)
+
+
 def on_mqtt_message(client, userdata, message):
     message_decoded = str(message.payload.decode('utf-8'))
     print(f'message received: {message_decoded}')
     draw_message(message_decoded)
     timer = threading.Timer(7, draw_stops_screen, args=(routes[route_index], current_stop_index))
     timer.start()
+    if "Invalid card" in message_decoded:
+        buzzer_thread = threading.Thread(target=handle_buzzer)
+        buzzer_thread.daemon = True
+        buzzer_thread.start()
+    
 
 def fetch_routes() -> list[Route]:
     with urllib.request.urlopen(f'http://{server_ip}:55555/courses') as url:
